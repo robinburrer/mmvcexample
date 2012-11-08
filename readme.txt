@@ -1,0 +1,1 @@
+A mmvc js hello world example - enjoy. 
