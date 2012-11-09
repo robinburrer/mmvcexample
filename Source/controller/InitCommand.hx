@@ -12,8 +12,8 @@ class InitCommand extends Command, implements IResponder
 {
 	
 	// the signal
-	@inject	
-	public var signal:InitSignal;
+	//@inject	
+	//public var signal:InitSignal;
 	
 	
 	// service 
