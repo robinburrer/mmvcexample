@@ -807,7 +807,6 @@ mmvc.impl.Command.__interfaces__ = [mmvc.api.ICommand];
 mmvc.impl.Command.prototype = {
 	execute: function() {
 	}
-	,signal: null
 	,mediatorMap: null
 	,injector: null
 	,commandMap: null
@@ -2060,10 +2059,8 @@ mmvc.base.CommandMap.prototype = {
 		return this.injector.instantiate(commandClass);
 	}
 	,routeSignalToCommand: function(signal,valueObjects,commandClass,oneshot) {
-		this.injector.mapValue(msignal.Signal,signal);
 		this.mapSignalValues(signal.valueClasses,valueObjects);
 		var command = this.createCommandInstance(commandClass);
-		this.injector.unmap(msignal.Signal);
 		this.unmapSignalValues(signal.valueClasses,valueObjects);
 		command.execute();
 		if(oneshot) this.unmapSignal(signal,commandClass);
@@ -3091,7 +3088,7 @@ msignal.SlotList.NIL = new msignal.SlotList(null,null);
 mmvc.api.IContext.__meta__ = { obj : { 'interface' : null}};
 ApplicationContext.__meta__ = { fields : { initSignal : { name : ["initSignal"], type : ["controller.InitSignal"], inject : null}}};
 mmvc.api.ICommand.__meta__ = { obj : { 'interface' : null}};
-mmvc.impl.Command.__meta__ = { fields : { signal : { name : ["signal"], type : ["msignal.Signal"], inject : null}, mediatorMap : { name : ["mediatorMap"], type : ["mmvc.api.IMediatorMap"], inject : null}, injector : { name : ["injector"], type : ["minject.Injector"], inject : null}, commandMap : { name : ["commandMap"], type : ["mmvc.api.ICommandMap"], inject : null}, contextView : { name : ["contextView"], type : ["mmvc.api.IViewContainer"], inject : null}}};
+mmvc.impl.Command.__meta__ = { fields : { mediatorMap : { name : ["mediatorMap"], type : ["mmvc.api.IMediatorMap"], inject : null}, injector : { name : ["injector"], type : ["minject.Injector"], inject : null}, commandMap : { name : ["commandMap"], type : ["mmvc.api.ICommandMap"], inject : null}, contextView : { name : ["contextView"], type : ["mmvc.api.IViewContainer"], inject : null}}};
 service.IResponder.__meta__ = { obj : { 'interface' : null}};
 controller.InitCommand.__meta__ = { fields : { contactsModel : { name : ["contactsModel"], type : ["model.ContactsModel"], inject : null}, service : { name : ["service"], type : ["service.IGetContactsService"], inject : null}}};
 msignal.Signal.__meta__ = { fields : { createSlot : { IgnoreCover : null}}};

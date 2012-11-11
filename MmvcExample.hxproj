@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<project version="2">
+<project version="2" ToolsVersion="4.0">
   <!-- Output SWF options -->
   <output>
     <movie outputType="CustomBuild" />
@@ -49,4 +49,9 @@
   </options>
   <!-- Plugin storage -->
   <storage />
+  <PropertyGroup xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{D56237FF-AF0A-45CE-B1E6-7973C324525B}</ProjectGuid>
+  </PropertyGroup>
 </project>
