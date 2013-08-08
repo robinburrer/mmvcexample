@@ -20,26 +20,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package;
-import js.Lib;
-/**
- * ...
- * @author robinburrer
- */
-class MmvcExample {
-	
-	public function new () 
+package controller;
+
+import msignal.Signal;
+
+import vo.ContactVO;
+
+class NotiSelectedContactSet extends Signal0
+{
+	public var selectedContact:ContactVO;
+	public function new ()
 	{
-		trace ("hallo");	
-		js.Lib.alert ("all good");
-		
-	}
-	
-	static function main () {
-		
-		new MmvcExample ();
-		//trace ("hallo");
-		
-	}
+		super();
+	}	
 
 }

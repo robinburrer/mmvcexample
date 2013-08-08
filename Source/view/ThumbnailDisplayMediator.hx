@@ -22,7 +22,8 @@ SOFTWARE.
 
 package view;
 import mmvc.impl.Mediator.Mediator;
-import model.ContactsModel;
+import controller.NotiSelectedContactSet;
+
 
 /**
  * ...
@@ -34,35 +35,29 @@ class ThumbnailDisplayMediator extends Mediator<ThumbnailDisplay>
 	
 	
 	@inject
-	public var contactsModel:ContactsModel;
+	public var notiSelectedContactSet:NotiSelectedContactSet;
 	
 	
 	
 	public function new () 
 	{
-		super();
-		
-		
+		super();		
 	}	
 	
 		
 	public override function onRegister():Void
 	{
 		super.onRegister();
-		contactsModel.signal.add(contactsModelChangeHandler);
+		view.drawUI();
+
+		notiSelectedContactSet.add(selectedContactHandler);
 	}			
 
 
-
-
-	private function contactsModelChangeHandler(event:String, model:ContactsModel):Void
+	private function selectedContactHandler():Void
 	{
-		if (event == ContactsModel.SELECTED_CONTACT_SET)
-		{
-			
-			view.src = "images/" + contactsModel.selectedContact.thumbURL;
-		}
-	
-	
+		view.src = "images/" + notiSelectedContactSet.selectedContact.thumbURL;
 	}
+
+
 }

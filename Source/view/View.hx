@@ -25,8 +25,8 @@ package view;
 #if flash
 import flash.display.Sprite;
 #elseif js
-import js.Lib;
-import js.Dom;
+import js.Browser.document;
+import js.html.DivElement;
 #end
 import msignal.Signal;
 
@@ -109,7 +109,7 @@ class View
 		/**
 		native html element representing this view in the DOM
 		*/
-		public var element(default, null):HtmlDom;
+		public var element(default, null):DivElement;
 		
 		/**
 		Optional tag name to use when creating element via Lib.document.createElement
@@ -233,8 +233,8 @@ class View
 		#if flash
 		sprite = new Sprite();
 		#elseif js
-		if(tagName == null) tagName = "div";
-		element = Lib.document.createElement(tagName);
+	
+		element = js.Browser.document.createDivElement();
 		element.setAttribute("id", id);
 		element.className = className;
 		#end

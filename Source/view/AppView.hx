@@ -29,7 +29,7 @@ import js.Lib;
  * ...
  * @author robinburrer
  */
-class AppView extends View, implements IViewContainer
+class AppView extends View implements IViewContainer
 {
 	public var viewAdded:Dynamic -> Void;
 	public var viewRemoved:Dynamic -> Void;	
@@ -60,21 +60,25 @@ class AppView extends View, implements IViewContainer
 	
 	public function drawUI()
 	{		
+		///trace ("drawUI");
 		element.style.position = "absolute";
 		element.style.width =  "203px";		
 		element.style.height = "102px";
 		element.style.backgroundColor = "grey";
 	
-	
+		
 		var contactsList:ContactsList = new ContactsList();
 		contactsList.element.style.left ="1px";
 		contactsList.element.style.top ="1px";
 		addChild(contactsList);
+
+
 		
 		var thumbNailDisplay:ThumbnailDisplay = new ThumbnailDisplay();
 		thumbNailDisplay.element.style.left ="102px";
 		thumbNailDisplay.element.style.top ="1px";
 		addChild(thumbNailDisplay);
+
 	
 		
 		
@@ -82,6 +86,7 @@ class AppView extends View, implements IViewContainer
 	
 	override public function dispatch(event:String, view:View)
 	{
+	
 		switch(event)
 		{
 			case View.ADDED:
@@ -94,7 +99,7 @@ class AppView extends View, implements IViewContainer
 			}
 			default:
 			{
-				super.dispatch(event, view);
+				//super.dispatch(event, view);
 			}
 		}
 	}
@@ -104,7 +109,7 @@ class AppView extends View, implements IViewContainer
 		super.initialize();
 	
 		// adds the app div to the document
-		js.Lib.document.body.appendChild(element);
+		js.Browser.document.body.appendChild(element);
 		
 	
 	}

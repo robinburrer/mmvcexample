@@ -1,24 +1,27 @@
-var $hxClasses = $hxClasses || {},$estr = function() { return js.Boot.__string_rec(this,''); };
+(function () { "use strict";
+var $hxClasses = {},$estr = function() { return js.Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function inherit() {}; inherit.prototype = from; var proto = new inherit();
 	for (var name in fields) proto[name] = fields[name];
+	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
-var mmvc = mmvc || {}
-if(!mmvc.api) mmvc.api = {}
-mmvc.api.IContext = $hxClasses["mmvc.api.IContext"] = function() { }
+var mmvc = {}
+mmvc.api = {}
+mmvc.api.IContext = function() { }
+$hxClasses["mmvc.api.IContext"] = mmvc.api.IContext;
 mmvc.api.IContext.__name__ = ["mmvc","api","IContext"];
 mmvc.api.IContext.prototype = {
 	commandMap: null
 	,__class__: mmvc.api.IContext
-	,__properties__: {get_commandMap:"get_commandMap"}
 }
-if(!mmvc.impl) mmvc.impl = {}
-mmvc.impl.Context = $hxClasses["mmvc.impl.Context"] = function(contextView,autoStartup) {
+mmvc.impl = {}
+mmvc.impl.Context = function(contextView,autoStartup) {
 	if(autoStartup == null) autoStartup = true;
 	this.autoStartup = autoStartup;
 	this.set_contextView(contextView);
 };
+$hxClasses["mmvc.impl.Context"] = mmvc.impl.Context;
 mmvc.impl.Context.__name__ = ["mmvc","impl","Context"];
 mmvc.impl.Context.__interfaces__ = [mmvc.api.IContext];
 mmvc.impl.Context.prototype = {
@@ -85,9 +88,10 @@ mmvc.impl.Context.prototype = {
 	,__class__: mmvc.impl.Context
 	,__properties__: {set_contextView:"set_contextView",get_commandMap:"get_commandMap",get_injector:"get_injector",get_mediatorMap:"get_mediatorMap",get_reflector:"get_reflector",get_viewMap:"get_viewMap"}
 }
-var ApplicationContext = $hxClasses["ApplicationContext"] = function(contextView) {
+var ApplicationContext = function(contextView) {
 	mmvc.impl.Context.call(this,contextView);
 };
+$hxClasses["ApplicationContext"] = ApplicationContext;
 ApplicationContext.__name__ = ["ApplicationContext"];
 ApplicationContext.__super__ = mmvc.impl.Context;
 ApplicationContext.prototype = $extend(mmvc.impl.Context.prototype,{
@@ -96,6 +100,8 @@ ApplicationContext.prototype = $extend(mmvc.impl.Context.prototype,{
 	,startup: function() {
 		this.get_commandMap().mapSignalClass(controller.InitSignal,controller.InitCommand);
 		this.get_commandMap().mapSignalClass(controller.SelectContactSignal,controller.SelectContactCommand);
+		this.get_injector().mapSingleton(controller.NotiContactsSet);
+		this.get_injector().mapSingleton(controller.NotiSelectedContactSet);
 		this.get_injector().mapSingleton(model.ContactsModel);
 		this.get_injector().mapSingletonOf(service.IGetContactsService,service.DummyGetContactsService);
 		this.get_mediatorMap().mapView(view.ContactsList,view.ContactsListMediator);
@@ -105,95 +111,9 @@ ApplicationContext.prototype = $extend(mmvc.impl.Context.prototype,{
 	,initSignal: null
 	,__class__: ApplicationContext
 });
-var Hash = $hxClasses["Hash"] = function() {
-	this.h = { };
-};
-Hash.__name__ = ["Hash"];
-Hash.prototype = {
-	toString: function() {
-		var s = new StringBuf();
-		s.b += Std.string("{");
-		var it = this.keys();
-		while( it.hasNext() ) {
-			var i = it.next();
-			s.b += Std.string(i);
-			s.b += Std.string(" => ");
-			s.b += Std.string(Std.string(this.get(i)));
-			if(it.hasNext()) s.b += Std.string(", ");
-		}
-		s.b += Std.string("}");
-		return s.b;
-	}
-	,iterator: function() {
-		return { ref : this.h, it : this.keys(), hasNext : function() {
-			return this.it.hasNext();
-		}, next : function() {
-			var i = this.it.next();
-			return this.ref["$" + i];
-		}};
-	}
-	,keys: function() {
-		var a = [];
-		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) a.push(key.substr(1));
-		}
-		return HxOverrides.iter(a);
-	}
-	,remove: function(key) {
-		key = "$" + key;
-		if(!this.h.hasOwnProperty(key)) return false;
-		delete(this.h[key]);
-		return true;
-	}
-	,exists: function(key) {
-		return this.h.hasOwnProperty("$" + key);
-	}
-	,get: function(key) {
-		return this.h["$" + key];
-	}
-	,set: function(key,value) {
-		this.h["$" + key] = value;
-	}
-	,h: null
-	,__class__: Hash
-}
-var HxOverrides = $hxClasses["HxOverrides"] = function() { }
+var HxOverrides = function() { }
+$hxClasses["HxOverrides"] = HxOverrides;
 HxOverrides.__name__ = ["HxOverrides"];
-HxOverrides.dateStr = function(date) {
-	var m = date.getMonth() + 1;
-	var d = date.getDate();
-	var h = date.getHours();
-	var mi = date.getMinutes();
-	var s = date.getSeconds();
-	return date.getFullYear() + "-" + (m < 10?"0" + m:"" + m) + "-" + (d < 10?"0" + d:"" + d) + " " + (h < 10?"0" + h:"" + h) + ":" + (mi < 10?"0" + mi:"" + mi) + ":" + (s < 10?"0" + s:"" + s);
-}
-HxOverrides.strDate = function(s) {
-	switch(s.length) {
-	case 8:
-		var k = s.split(":");
-		var d = new Date();
-		d.setTime(0);
-		d.setUTCHours(k[0]);
-		d.setUTCMinutes(k[1]);
-		d.setUTCSeconds(k[2]);
-		return d;
-	case 10:
-		var k = s.split("-");
-		return new Date(k[0],k[1] - 1,k[2],0,0,0);
-	case 19:
-		var k = s.split(" ");
-		var y = k[0].split("-");
-		var t = k[1].split(":");
-		return new Date(y[0],y[1] - 1,y[2],t[0],t[1],t[2]);
-	default:
-		throw "Invalid date format : " + s;
-	}
-}
-HxOverrides.cca = function(s,index) {
-	var x = s.charCodeAt(index);
-	if(x != x) return undefined;
-	return x;
-}
 HxOverrides.substr = function(s,pos,len) {
 	if(pos != null && pos != 0 && len != null && len < 0) return "";
 	if(len == null) len = s.length;
@@ -222,136 +142,16 @@ HxOverrides.iter = function(a) {
 		return this.arr[this.cur++];
 	}};
 }
-var IntIter = $hxClasses["IntIter"] = function(min,max) {
-	this.min = min;
-	this.max = max;
-};
-IntIter.__name__ = ["IntIter"];
-IntIter.prototype = {
-	next: function() {
-		return this.min++;
-	}
-	,hasNext: function() {
-		return this.min < this.max;
-	}
-	,max: null
-	,min: null
-	,__class__: IntIter
-}
-var Lambda = $hxClasses["Lambda"] = function() { }
+var Lambda = function() { }
+$hxClasses["Lambda"] = Lambda;
 Lambda.__name__ = ["Lambda"];
-Lambda.array = function(it) {
-	var a = new Array();
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var i = $it0.next();
-		a.push(i);
-	}
-	return a;
-}
-Lambda.list = function(it) {
-	var l = new List();
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var i = $it0.next();
-		l.add(i);
-	}
-	return l;
-}
-Lambda.map = function(it,f) {
-	var l = new List();
+Lambda.has = function(it,elt) {
 	var $it0 = $iterator(it)();
 	while( $it0.hasNext() ) {
 		var x = $it0.next();
-		l.add(f(x));
-	}
-	return l;
-}
-Lambda.mapi = function(it,f) {
-	var l = new List();
-	var i = 0;
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var x = $it0.next();
-		l.add(f(i++,x));
-	}
-	return l;
-}
-Lambda.has = function(it,elt,cmp) {
-	if(cmp == null) {
-		var $it0 = $iterator(it)();
-		while( $it0.hasNext() ) {
-			var x = $it0.next();
-			if(x == elt) return true;
-		}
-	} else {
-		var $it1 = $iterator(it)();
-		while( $it1.hasNext() ) {
-			var x = $it1.next();
-			if(cmp(x,elt)) return true;
-		}
+		if(x == elt) return true;
 	}
 	return false;
-}
-Lambda.exists = function(it,f) {
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var x = $it0.next();
-		if(f(x)) return true;
-	}
-	return false;
-}
-Lambda.foreach = function(it,f) {
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var x = $it0.next();
-		if(!f(x)) return false;
-	}
-	return true;
-}
-Lambda.iter = function(it,f) {
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var x = $it0.next();
-		f(x);
-	}
-}
-Lambda.filter = function(it,f) {
-	var l = new List();
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var x = $it0.next();
-		if(f(x)) l.add(x);
-	}
-	return l;
-}
-Lambda.fold = function(it,f,first) {
-	var $it0 = $iterator(it)();
-	while( $it0.hasNext() ) {
-		var x = $it0.next();
-		first = f(x,first);
-	}
-	return first;
-}
-Lambda.count = function(it,pred) {
-	var n = 0;
-	if(pred == null) {
-		var $it0 = $iterator(it)();
-		while( $it0.hasNext() ) {
-			var _ = $it0.next();
-			n++;
-		}
-	} else {
-		var $it1 = $iterator(it)();
-		while( $it1.hasNext() ) {
-			var x = $it1.next();
-			if(pred(x)) n++;
-		}
-	}
-	return n;
-}
-Lambda.empty = function(it) {
-	return !$iterator(it)().hasNext();
 }
 Lambda.indexOf = function(it,v) {
 	var i = 0;
@@ -363,140 +163,19 @@ Lambda.indexOf = function(it,v) {
 	}
 	return -1;
 }
-Lambda.concat = function(a,b) {
-	var l = new List();
-	var $it0 = $iterator(a)();
-	while( $it0.hasNext() ) {
-		var x = $it0.next();
-		l.add(x);
-	}
-	var $it1 = $iterator(b)();
-	while( $it1.hasNext() ) {
-		var x = $it1.next();
-		l.add(x);
-	}
-	return l;
-}
-var List = $hxClasses["List"] = function() {
-	this.length = 0;
-};
-List.__name__ = ["List"];
-List.prototype = {
-	map: function(f) {
-		var b = new List();
-		var l = this.h;
-		while(l != null) {
-			var v = l[0];
-			l = l[1];
-			b.add(f(v));
-		}
-		return b;
-	}
-	,filter: function(f) {
-		var l2 = new List();
-		var l = this.h;
-		while(l != null) {
-			var v = l[0];
-			l = l[1];
-			if(f(v)) l2.add(v);
-		}
-		return l2;
-	}
-	,join: function(sep) {
-		var s = new StringBuf();
-		var first = true;
-		var l = this.h;
-		while(l != null) {
-			if(first) first = false; else s.b += Std.string(sep);
-			s.b += Std.string(l[0]);
-			l = l[1];
-		}
-		return s.b;
-	}
-	,toString: function() {
-		var s = new StringBuf();
-		var first = true;
-		var l = this.h;
-		s.b += Std.string("{");
-		while(l != null) {
-			if(first) first = false; else s.b += Std.string(", ");
-			s.b += Std.string(Std.string(l[0]));
-			l = l[1];
-		}
-		s.b += Std.string("}");
-		return s.b;
-	}
-	,iterator: function() {
-		return { h : this.h, hasNext : function() {
-			return this.h != null;
-		}, next : function() {
-			if(this.h == null) return null;
-			var x = this.h[0];
-			this.h = this.h[1];
-			return x;
-		}};
-	}
-	,remove: function(v) {
-		var prev = null;
-		var l = this.h;
-		while(l != null) {
-			if(l[0] == v) {
-				if(prev == null) this.h = l[1]; else prev[1] = l[1];
-				if(this.q == l) this.q = prev;
-				this.length--;
-				return true;
-			}
-			prev = l;
-			l = l[1];
-		}
-		return false;
-	}
-	,clear: function() {
-		this.h = null;
-		this.q = null;
-		this.length = 0;
-	}
-	,isEmpty: function() {
-		return this.h == null;
-	}
-	,pop: function() {
-		if(this.h == null) return null;
-		var x = this.h[0];
-		this.h = this.h[1];
-		if(this.h == null) this.q = null;
-		this.length--;
-		return x;
-	}
-	,last: function() {
-		return this.q == null?null:this.q[0];
-	}
-	,first: function() {
-		return this.h == null?null:this.h[0];
-	}
-	,push: function(item) {
-		var x = [item,this.h];
-		this.h = x;
-		if(this.q == null) this.q = x;
-		this.length++;
-	}
-	,add: function(item) {
-		var x = [item];
-		if(this.h == null) this.h = x; else this.q[1] = x;
-		this.q = x;
-		this.length++;
-	}
-	,length: null
-	,q: null
-	,h: null
-	,__class__: List
-}
-var Main = $hxClasses["Main"] = function() { }
+var Main = function() { }
+$hxClasses["Main"] = Main;
 Main.__name__ = ["Main"];
 Main.main = function() {
+	console.log("start");
 	var view1 = new view.AppView();
 	var context = new ApplicationContext(view1);
 }
-var Reflect = $hxClasses["Reflect"] = function() { }
+var IMap = function() { }
+$hxClasses["IMap"] = IMap;
+IMap.__name__ = ["IMap"];
+var Reflect = function() { }
+$hxClasses["Reflect"] = Reflect;
 Reflect.__name__ = ["Reflect"];
 Reflect.hasField = function(o,field) {
 	return Object.prototype.hasOwnProperty.call(o,field);
@@ -509,26 +188,16 @@ Reflect.field = function(o,field) {
 	}
 	return v;
 }
-Reflect.setField = function(o,field,value) {
-	o[field] = value;
-}
-Reflect.getProperty = function(o,field) {
-	var tmp;
-	return o == null?null:o.__properties__ && (tmp = o.__properties__["get_" + field])?o[tmp]():o[field];
-}
 Reflect.setProperty = function(o,field,value) {
 	var tmp;
 	if(o.__properties__ && (tmp = o.__properties__["set_" + field])) o[tmp](value); else o[field] = value;
-}
-Reflect.callMethod = function(o,func,args) {
-	return func.apply(o,args);
 }
 Reflect.fields = function(o) {
 	var a = [];
 	if(o != null) {
 		var hasOwnProperty = Object.prototype.hasOwnProperty;
 		for( var f in o ) {
-		if(hasOwnProperty.call(o,f)) a.push(f);
+		if(f != "__id__" && f != "hx__closures__" && hasOwnProperty.call(o,f)) a.push(f);
 		}
 	}
 	return a;
@@ -536,33 +205,15 @@ Reflect.fields = function(o) {
 Reflect.isFunction = function(f) {
 	return typeof(f) == "function" && !(f.__name__ || f.__ename__);
 }
-Reflect.compare = function(a,b) {
-	return a == b?0:a > b?1:-1;
-}
 Reflect.compareMethods = function(f1,f2) {
 	if(f1 == f2) return true;
 	if(!Reflect.isFunction(f1) || !Reflect.isFunction(f2)) return false;
 	return f1.scope == f2.scope && f1.method == f2.method && f1.method != null;
 }
-Reflect.isObject = function(v) {
-	if(v == null) return false;
-	var t = typeof(v);
-	return t == "string" || t == "object" && !v.__enum__ || t == "function" && (v.__name__ || v.__ename__);
-}
-Reflect.deleteField = function(o,f) {
-	if(!Reflect.hasField(o,f)) return false;
-	delete(o[f]);
+Reflect.deleteField = function(o,field) {
+	if(!Reflect.hasField(o,field)) return false;
+	delete(o[field]);
 	return true;
-}
-Reflect.copy = function(o) {
-	var o2 = { };
-	var _g = 0, _g1 = Reflect.fields(o);
-	while(_g < _g1.length) {
-		var f = _g1[_g];
-		++_g;
-		o2[f] = Reflect.field(o,f);
-	}
-	return o2;
 }
 Reflect.makeVarArgs = function(f) {
 	return function() {
@@ -570,50 +221,16 @@ Reflect.makeVarArgs = function(f) {
 		return f(a);
 	};
 }
-var Std = $hxClasses["Std"] = function() { }
+var Std = function() { }
+$hxClasses["Std"] = Std;
 Std.__name__ = ["Std"];
-Std["is"] = function(v,t) {
-	return js.Boot.__instanceof(v,t);
-}
 Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
 }
-Std["int"] = function(x) {
-	return x | 0;
-}
-Std.parseInt = function(x) {
-	var v = parseInt(x,10);
-	if(v == 0 && (HxOverrides.cca(x,1) == 120 || HxOverrides.cca(x,1) == 88)) v = parseInt(x);
-	if(isNaN(v)) return null;
-	return v;
-}
-Std.parseFloat = function(x) {
-	return parseFloat(x);
-}
 Std.random = function(x) {
-	return Math.floor(Math.random() * x);
+	return x <= 0?0:Math.floor(Math.random() * x);
 }
-var StringBuf = $hxClasses["StringBuf"] = function() {
-	this.b = "";
-};
-StringBuf.__name__ = ["StringBuf"];
-StringBuf.prototype = {
-	toString: function() {
-		return this.b;
-	}
-	,addSub: function(s,pos,len) {
-		this.b += HxOverrides.substr(s,pos,len);
-	}
-	,addChar: function(c) {
-		this.b += String.fromCharCode(c);
-	}
-	,add: function(x) {
-		this.b += Std.string(x);
-	}
-	,b: null
-	,__class__: StringBuf
-}
-var ValueType = $hxClasses["ValueType"] = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] }
+var ValueType = { __ename__ : true, __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] }
 ValueType.TNull = ["TNull",0];
 ValueType.TNull.toString = $estr;
 ValueType.TNull.__enum__ = ValueType;
@@ -637,15 +254,12 @@ ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType;
 ValueType.TUnknown = ["TUnknown",8];
 ValueType.TUnknown.toString = $estr;
 ValueType.TUnknown.__enum__ = ValueType;
-var Type = $hxClasses["Type"] = function() { }
+var Type = function() { }
+$hxClasses["Type"] = Type;
 Type.__name__ = ["Type"];
 Type.getClass = function(o) {
 	if(o == null) return null;
 	return o.__class__;
-}
-Type.getEnum = function(o) {
-	if(o == null) return null;
-	return o.__enum__;
 }
 Type.getSuperClass = function(c) {
 	return c.__super__;
@@ -654,19 +268,10 @@ Type.getClassName = function(c) {
 	var a = c.__name__;
 	return a.join(".");
 }
-Type.getEnumName = function(e) {
-	var a = e.__ename__;
-	return a.join(".");
-}
 Type.resolveClass = function(name) {
 	var cl = $hxClasses[name];
 	if(cl == null || !cl.__name__) return null;
 	return cl;
-}
-Type.resolveEnum = function(name) {
-	var e = $hxClasses[name];
-	if(e == null || !e.__ename__) return null;
-	return e;
 }
 Type.createInstance = function(cl,args) {
 	switch(args.length) {
@@ -697,21 +302,6 @@ Type.createEmptyInstance = function(cl) {
 	function empty() {}; empty.prototype = cl.prototype;
 	return new empty();
 }
-Type.createEnum = function(e,constr,params) {
-	var f = Reflect.field(e,constr);
-	if(f == null) throw "No such constructor " + constr;
-	if(Reflect.isFunction(f)) {
-		if(params == null) throw "Constructor " + constr + " need parameters";
-		return f.apply(e,params);
-	}
-	if(params != null && params.length != 0) throw "Constructor " + constr + " does not need parameters";
-	return f;
-}
-Type.createEnumIndex = function(e,index,params) {
-	var c = e.__constructs__[index];
-	if(c == null) throw index + " is not a valid enum constructor index";
-	return Type.createEnum(e,c,params);
-}
 Type.getInstanceFields = function(c) {
 	var a = [];
 	for(var i in c.prototype) a.push(i);
@@ -719,21 +309,9 @@ Type.getInstanceFields = function(c) {
 	HxOverrides.remove(a,"__properties__");
 	return a;
 }
-Type.getClassFields = function(c) {
-	var a = Reflect.fields(c);
-	HxOverrides.remove(a,"__name__");
-	HxOverrides.remove(a,"__interfaces__");
-	HxOverrides.remove(a,"__properties__");
-	HxOverrides.remove(a,"__super__");
-	HxOverrides.remove(a,"prototype");
-	return a;
-}
-Type.getEnumConstructs = function(e) {
-	var a = e.__constructs__;
-	return a.slice();
-}
 Type["typeof"] = function(v) {
-	switch(typeof(v)) {
+	var _g = typeof(v);
+	switch(_g) {
 	case "boolean":
 		return ValueType.TBool;
 	case "string":
@@ -757,51 +335,16 @@ Type["typeof"] = function(v) {
 		return ValueType.TUnknown;
 	}
 }
-Type.enumEq = function(a,b) {
-	if(a == b) return true;
-	try {
-		if(a[0] != b[0]) return false;
-		var _g1 = 2, _g = a.length;
-		while(_g1 < _g) {
-			var i = _g1++;
-			if(!Type.enumEq(a[i],b[i])) return false;
-		}
-		var e = a.__enum__;
-		if(e != b.__enum__ || e == null) return false;
-	} catch( e ) {
-		return false;
-	}
-	return true;
-}
-Type.enumConstructor = function(e) {
-	return e[0];
-}
-Type.enumParameters = function(e) {
-	return e.slice(2);
-}
-Type.enumIndex = function(e) {
-	return e[1];
-}
-Type.allEnums = function(e) {
-	var all = [];
-	var cst = e.__constructs__;
-	var _g = 0;
-	while(_g < cst.length) {
-		var c = cst[_g];
-		++_g;
-		var v = Reflect.field(e,c);
-		if(!Reflect.isFunction(v)) all.push(v);
-	}
-	return all;
-}
-mmvc.api.ICommand = $hxClasses["mmvc.api.ICommand"] = function() { }
+mmvc.api.ICommand = function() { }
+$hxClasses["mmvc.api.ICommand"] = mmvc.api.ICommand;
 mmvc.api.ICommand.__name__ = ["mmvc","api","ICommand"];
 mmvc.api.ICommand.prototype = {
 	execute: null
 	,__class__: mmvc.api.ICommand
 }
-mmvc.impl.Command = $hxClasses["mmvc.impl.Command"] = function() {
+mmvc.impl.Command = function() {
 };
+$hxClasses["mmvc.impl.Command"] = mmvc.impl.Command;
 mmvc.impl.Command.__name__ = ["mmvc","impl","Command"];
 mmvc.impl.Command.__interfaces__ = [mmvc.api.ICommand];
 mmvc.impl.Command.prototype = {
@@ -814,18 +357,20 @@ mmvc.impl.Command.prototype = {
 	,contextView: null
 	,__class__: mmvc.impl.Command
 }
-var service = service || {}
-service.IResponder = $hxClasses["service.IResponder"] = function() { }
+var service = {}
+service.IResponder = function() { }
+$hxClasses["service.IResponder"] = service.IResponder;
 service.IResponder.__name__ = ["service","IResponder"];
 service.IResponder.prototype = {
 	onFault: null
 	,onResult: null
 	,__class__: service.IResponder
 }
-var controller = controller || {}
-controller.InitCommand = $hxClasses["controller.InitCommand"] = function() {
+var controller = {}
+controller.InitCommand = function() {
 	mmvc.impl.Command.call(this);
 };
+$hxClasses["controller.InitCommand"] = controller.InitCommand;
 controller.InitCommand.__name__ = ["controller","InitCommand"];
 controller.InitCommand.__interfaces__ = [service.IResponder];
 controller.InitCommand.__super__ = mmvc.impl.Command;
@@ -833,8 +378,8 @@ controller.InitCommand.prototype = $extend(mmvc.impl.Command.prototype,{
 	onFault: function(FaultObject) {
 	}
 	,onResult: function(resultObject) {
-		this.contactsModel.setContacts(resultObject);
-		this.contactsModel.setSelectedContact(this.contactsModel.getContacts()[0]);
+		this.contactsModel.set_contacts(resultObject);
+		this.contactsModel.set_selectedContact(this.contactsModel.get_contacts()[0]);
 		this.commandMap.release(this);
 	}
 	,execute: function() {
@@ -845,13 +390,14 @@ controller.InitCommand.prototype = $extend(mmvc.impl.Command.prototype,{
 	,service: null
 	,__class__: controller.InitCommand
 });
-var msignal = msignal || {}
-msignal.Signal = $hxClasses["msignal.Signal"] = function(valueClasses) {
+var msignal = {}
+msignal.Signal = function(valueClasses) {
 	if(valueClasses == null) valueClasses = [];
 	this.valueClasses = valueClasses;
 	this.slots = msignal.SlotList.NIL;
 	this.priorityBased = false;
 };
+$hxClasses["msignal.Signal"] = msignal.Signal;
 msignal.Signal.__name__ = ["msignal","Signal"];
 msignal.Signal.prototype = {
 	get_numListeners: function() {
@@ -910,9 +456,10 @@ msignal.Signal.prototype = {
 	,__class__: msignal.Signal
 	,__properties__: {get_numListeners:"get_numListeners"}
 }
-msignal.Signal0 = $hxClasses["msignal.Signal0"] = function() {
+msignal.Signal0 = function() {
 	msignal.Signal.call(this);
 };
+$hxClasses["msignal.Signal0"] = msignal.Signal0;
 msignal.Signal0.__name__ = ["msignal","Signal0"];
 msignal.Signal0.__super__ = msignal.Signal;
 msignal.Signal0.prototype = $extend(msignal.Signal.prototype,{
@@ -930,312 +477,110 @@ msignal.Signal0.prototype = $extend(msignal.Signal.prototype,{
 	}
 	,__class__: msignal.Signal0
 });
-controller.InitSignal = $hxClasses["controller.InitSignal"] = function() {
+controller.InitSignal = function() {
 	msignal.Signal0.call(this);
 };
+$hxClasses["controller.InitSignal"] = controller.InitSignal;
 controller.InitSignal.__name__ = ["controller","InitSignal"];
 controller.InitSignal.__super__ = msignal.Signal0;
 controller.InitSignal.prototype = $extend(msignal.Signal0.prototype,{
 	__class__: controller.InitSignal
 });
-controller.SelectContactCommand = $hxClasses["controller.SelectContactCommand"] = function() {
+controller.NotiContactsSet = function() {
+	msignal.Signal0.call(this);
+};
+$hxClasses["controller.NotiContactsSet"] = controller.NotiContactsSet;
+controller.NotiContactsSet.__name__ = ["controller","NotiContactsSet"];
+controller.NotiContactsSet.__super__ = msignal.Signal0;
+controller.NotiContactsSet.prototype = $extend(msignal.Signal0.prototype,{
+	contacts: null
+	,__class__: controller.NotiContactsSet
+});
+controller.NotiSelectedContactSet = function() {
+	msignal.Signal0.call(this);
+};
+$hxClasses["controller.NotiSelectedContactSet"] = controller.NotiSelectedContactSet;
+controller.NotiSelectedContactSet.__name__ = ["controller","NotiSelectedContactSet"];
+controller.NotiSelectedContactSet.__super__ = msignal.Signal0;
+controller.NotiSelectedContactSet.prototype = $extend(msignal.Signal0.prototype,{
+	selectedContact: null
+	,__class__: controller.NotiSelectedContactSet
+});
+controller.SelectContactCommand = function() {
 	mmvc.impl.Command.call(this);
 };
+$hxClasses["controller.SelectContactCommand"] = controller.SelectContactCommand;
 controller.SelectContactCommand.__name__ = ["controller","SelectContactCommand"];
 controller.SelectContactCommand.__super__ = mmvc.impl.Command;
 controller.SelectContactCommand.prototype = $extend(mmvc.impl.Command.prototype,{
 	execute: function() {
-		this.contactsModel.setSelectedContact(this.selectContactSignal.selectedContact);
+		this.contactsModel.set_selectedContact(this.selectContactSignal.selectedContact);
 	}
 	,contactsModel: null
 	,selectContactSignal: null
 	,__class__: controller.SelectContactCommand
 });
-controller.SelectContactSignal = $hxClasses["controller.SelectContactSignal"] = function() {
+controller.SelectContactSignal = function() {
 	msignal.Signal0.call(this);
 };
+$hxClasses["controller.SelectContactSignal"] = controller.SelectContactSignal;
 controller.SelectContactSignal.__name__ = ["controller","SelectContactSignal"];
 controller.SelectContactSignal.__super__ = msignal.Signal0;
 controller.SelectContactSignal.prototype = $extend(msignal.Signal0.prototype,{
 	selectedContact: null
 	,__class__: controller.SelectContactSignal
 });
-var haxe = haxe || {}
-haxe.Log = $hxClasses["haxe.Log"] = function() { }
-haxe.Log.__name__ = ["haxe","Log"];
-haxe.Log.trace = function(v,infos) {
-	js.Boot.__trace(v,infos);
+var haxe = {}
+haxe.StackItem = { __ename__ : true, __constructs__ : ["CFunction","Module","FilePos","Method","Lambda"] }
+haxe.StackItem.CFunction = ["CFunction",0];
+haxe.StackItem.CFunction.toString = $estr;
+haxe.StackItem.CFunction.__enum__ = haxe.StackItem;
+haxe.StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.StackItem.Lambda = function(v) { var $x = ["Lambda",4,v]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.CallStack = function() { }
+$hxClasses["haxe.CallStack"] = haxe.CallStack;
+haxe.CallStack.__name__ = ["haxe","CallStack"];
+haxe.CallStack.exceptionStack = function() {
+	return [];
 }
-haxe.Log.clear = function() {
-	js.Boot.__clear_trace();
-}
-haxe.Timer = $hxClasses["haxe.Timer"] = function(time_ms) {
-	var me = this;
-	this.id = window.setInterval(function() {
-		me.run();
-	},time_ms);
+haxe.ds = {}
+haxe.ds.StringMap = function() {
+	this.h = { };
 };
-haxe.Timer.__name__ = ["haxe","Timer"];
-haxe.Timer.delay = function(f,time_ms) {
-	var t = new haxe.Timer(time_ms);
-	t.run = function() {
-		t.stop();
-		f();
-	};
-	return t;
-}
-haxe.Timer.measure = function(f,pos) {
-	var t0 = haxe.Timer.stamp();
-	var r = f();
-	haxe.Log.trace(haxe.Timer.stamp() - t0 + "s",pos);
-	return r;
-}
-haxe.Timer.stamp = function() {
-	return new Date().getTime() / 1000;
-}
-haxe.Timer.prototype = {
-	run: function() {
+$hxClasses["haxe.ds.StringMap"] = haxe.ds.StringMap;
+haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
+haxe.ds.StringMap.__interfaces__ = [IMap];
+haxe.ds.StringMap.prototype = {
+	exists: function(key) {
+		return this.h.hasOwnProperty("$" + key);
 	}
-	,stop: function() {
-		if(this.id == null) return;
-		window.clearInterval(this.id);
-		this.id = null;
+	,get: function(key) {
+		return this.h["$" + key];
 	}
-	,id: null
-	,__class__: haxe.Timer
-}
-if(!haxe.rtti) haxe.rtti = {}
-haxe.rtti.CType = $hxClasses["haxe.rtti.CType"] = { __ename__ : ["haxe","rtti","CType"], __constructs__ : ["CUnknown","CEnum","CClass","CTypedef","CFunction","CAnonymous","CDynamic"] }
-haxe.rtti.CType.CUnknown = ["CUnknown",0];
-haxe.rtti.CType.CUnknown.toString = $estr;
-haxe.rtti.CType.CUnknown.__enum__ = haxe.rtti.CType;
-haxe.rtti.CType.CEnum = function(name,params) { var $x = ["CEnum",1,name,params]; $x.__enum__ = haxe.rtti.CType; $x.toString = $estr; return $x; }
-haxe.rtti.CType.CClass = function(name,params) { var $x = ["CClass",2,name,params]; $x.__enum__ = haxe.rtti.CType; $x.toString = $estr; return $x; }
-haxe.rtti.CType.CTypedef = function(name,params) { var $x = ["CTypedef",3,name,params]; $x.__enum__ = haxe.rtti.CType; $x.toString = $estr; return $x; }
-haxe.rtti.CType.CFunction = function(args,ret) { var $x = ["CFunction",4,args,ret]; $x.__enum__ = haxe.rtti.CType; $x.toString = $estr; return $x; }
-haxe.rtti.CType.CAnonymous = function(fields) { var $x = ["CAnonymous",5,fields]; $x.__enum__ = haxe.rtti.CType; $x.toString = $estr; return $x; }
-haxe.rtti.CType.CDynamic = function(t) { var $x = ["CDynamic",6,t]; $x.__enum__ = haxe.rtti.CType; $x.toString = $estr; return $x; }
-haxe.rtti.Rights = $hxClasses["haxe.rtti.Rights"] = { __ename__ : ["haxe","rtti","Rights"], __constructs__ : ["RNormal","RNo","RCall","RMethod","RDynamic","RInline"] }
-haxe.rtti.Rights.RNormal = ["RNormal",0];
-haxe.rtti.Rights.RNormal.toString = $estr;
-haxe.rtti.Rights.RNormal.__enum__ = haxe.rtti.Rights;
-haxe.rtti.Rights.RNo = ["RNo",1];
-haxe.rtti.Rights.RNo.toString = $estr;
-haxe.rtti.Rights.RNo.__enum__ = haxe.rtti.Rights;
-haxe.rtti.Rights.RCall = function(m) { var $x = ["RCall",2,m]; $x.__enum__ = haxe.rtti.Rights; $x.toString = $estr; return $x; }
-haxe.rtti.Rights.RMethod = ["RMethod",3];
-haxe.rtti.Rights.RMethod.toString = $estr;
-haxe.rtti.Rights.RMethod.__enum__ = haxe.rtti.Rights;
-haxe.rtti.Rights.RDynamic = ["RDynamic",4];
-haxe.rtti.Rights.RDynamic.toString = $estr;
-haxe.rtti.Rights.RDynamic.__enum__ = haxe.rtti.Rights;
-haxe.rtti.Rights.RInline = ["RInline",5];
-haxe.rtti.Rights.RInline.toString = $estr;
-haxe.rtti.Rights.RInline.__enum__ = haxe.rtti.Rights;
-haxe.rtti.TypeTree = $hxClasses["haxe.rtti.TypeTree"] = { __ename__ : ["haxe","rtti","TypeTree"], __constructs__ : ["TPackage","TClassdecl","TEnumdecl","TTypedecl"] }
-haxe.rtti.TypeTree.TPackage = function(name,full,subs) { var $x = ["TPackage",0,name,full,subs]; $x.__enum__ = haxe.rtti.TypeTree; $x.toString = $estr; return $x; }
-haxe.rtti.TypeTree.TClassdecl = function(c) { var $x = ["TClassdecl",1,c]; $x.__enum__ = haxe.rtti.TypeTree; $x.toString = $estr; return $x; }
-haxe.rtti.TypeTree.TEnumdecl = function(e) { var $x = ["TEnumdecl",2,e]; $x.__enum__ = haxe.rtti.TypeTree; $x.toString = $estr; return $x; }
-haxe.rtti.TypeTree.TTypedecl = function(t) { var $x = ["TTypedecl",3,t]; $x.__enum__ = haxe.rtti.TypeTree; $x.toString = $estr; return $x; }
-haxe.rtti.TypeApi = $hxClasses["haxe.rtti.TypeApi"] = function() { }
-haxe.rtti.TypeApi.__name__ = ["haxe","rtti","TypeApi"];
-haxe.rtti.TypeApi.typeInfos = function(t) {
-	var inf;
-	var $e = (t);
-	switch( $e[1] ) {
-	case 1:
-		var c = $e[2];
-		inf = c;
-		break;
-	case 2:
-		var e = $e[2];
-		inf = e;
-		break;
-	case 3:
-		var t1 = $e[2];
-		inf = t1;
-		break;
-	case 0:
-		throw "Unexpected Package";
-		break;
+	,set: function(key,value) {
+		this.h["$" + key] = value;
 	}
-	return inf;
+	,h: null
+	,__class__: haxe.ds.StringMap
 }
-haxe.rtti.TypeApi.isVar = function(t) {
-	return (function($this) {
-		var $r;
-		switch( (t)[1] ) {
-		case 4:
-			$r = false;
-			break;
-		default:
-			$r = true;
-		}
-		return $r;
-	}(this));
-}
-haxe.rtti.TypeApi.leq = function(f,l1,l2) {
-	var it = l2.iterator();
-	var $it0 = l1.iterator();
-	while( $it0.hasNext() ) {
-		var e1 = $it0.next();
-		if(!it.hasNext()) return false;
-		var e2 = it.next();
-		if(!f(e1,e2)) return false;
-	}
-	if(it.hasNext()) return false;
-	return true;
-}
-haxe.rtti.TypeApi.rightsEq = function(r1,r2) {
-	if(r1 == r2) return true;
-	var $e = (r1);
-	switch( $e[1] ) {
-	case 2:
-		var m1 = $e[2];
-		var $e = (r2);
-		switch( $e[1] ) {
-		case 2:
-			var m2 = $e[2];
-			return m1 == m2;
-		default:
-		}
-		break;
-	default:
-	}
-	return false;
-}
-haxe.rtti.TypeApi.typeEq = function(t1,t2) {
-	var $e = (t1);
-	switch( $e[1] ) {
-	case 0:
-		return t2 == haxe.rtti.CType.CUnknown;
-	case 1:
-		var params = $e[3], name = $e[2];
-		var $e = (t2);
-		switch( $e[1] ) {
-		case 1:
-			var params2 = $e[3], name2 = $e[2];
-			return name == name2 && haxe.rtti.TypeApi.leq(haxe.rtti.TypeApi.typeEq,params,params2);
-		default:
-		}
-		break;
-	case 2:
-		var params = $e[3], name = $e[2];
-		var $e = (t2);
-		switch( $e[1] ) {
-		case 2:
-			var params2 = $e[3], name2 = $e[2];
-			return name == name2 && haxe.rtti.TypeApi.leq(haxe.rtti.TypeApi.typeEq,params,params2);
-		default:
-		}
-		break;
-	case 3:
-		var params = $e[3], name = $e[2];
-		var $e = (t2);
-		switch( $e[1] ) {
-		case 3:
-			var params2 = $e[3], name2 = $e[2];
-			return name == name2 && haxe.rtti.TypeApi.leq(haxe.rtti.TypeApi.typeEq,params,params2);
-		default:
-		}
-		break;
-	case 4:
-		var ret = $e[3], args = $e[2];
-		var $e = (t2);
-		switch( $e[1] ) {
-		case 4:
-			var ret2 = $e[3], args2 = $e[2];
-			return haxe.rtti.TypeApi.leq(function(a,b) {
-				return a.name == b.name && a.opt == b.opt && haxe.rtti.TypeApi.typeEq(a.t,b.t);
-			},args,args2) && haxe.rtti.TypeApi.typeEq(ret,ret2);
-		default:
-		}
-		break;
-	case 5:
-		var fields = $e[2];
-		var $e = (t2);
-		switch( $e[1] ) {
-		case 5:
-			var fields2 = $e[2];
-			return haxe.rtti.TypeApi.leq(function(a,b) {
-				return a.name == b.name && haxe.rtti.TypeApi.typeEq(a.t,b.t);
-			},fields,fields2);
-		default:
-		}
-		break;
-	case 6:
-		var t = $e[2];
-		var $e = (t2);
-		switch( $e[1] ) {
-		case 6:
-			var t21 = $e[2];
-			if(t == null != (t21 == null)) return false;
-			return t == null || haxe.rtti.TypeApi.typeEq(t,t21);
-		default:
-		}
-		break;
-	}
-	return false;
-}
-haxe.rtti.TypeApi.fieldEq = function(f1,f2) {
-	if(f1.name != f2.name) return false;
-	if(!haxe.rtti.TypeApi.typeEq(f1.type,f2.type)) return false;
-	if(f1.isPublic != f2.isPublic) return false;
-	if(f1.doc != f2.doc) return false;
-	if(!haxe.rtti.TypeApi.rightsEq(f1.get,f2.get)) return false;
-	if(!haxe.rtti.TypeApi.rightsEq(f1.set,f2.set)) return false;
-	if(f1.params == null != (f2.params == null)) return false;
-	if(f1.params != null && f1.params.join(":") != f2.params.join(":")) return false;
-	return true;
-}
-haxe.rtti.TypeApi.constructorEq = function(c1,c2) {
-	if(c1.name != c2.name) return false;
-	if(c1.doc != c2.doc) return false;
-	if(c1.args == null != (c2.args == null)) return false;
-	if(c1.args != null && !haxe.rtti.TypeApi.leq(function(a,b) {
-		return a.name == b.name && a.opt == b.opt && haxe.rtti.TypeApi.typeEq(a.t,b.t);
-	},c1.args,c2.args)) return false;
-	return true;
-}
-haxe.rtti.Meta = $hxClasses["haxe.rtti.Meta"] = function() { }
+haxe.rtti = {}
+haxe.rtti.Meta = function() { }
+$hxClasses["haxe.rtti.Meta"] = haxe.rtti.Meta;
 haxe.rtti.Meta.__name__ = ["haxe","rtti","Meta"];
 haxe.rtti.Meta.getType = function(t) {
 	var meta = t.__meta__;
 	return meta == null || meta.obj == null?{ }:meta.obj;
 }
-haxe.rtti.Meta.getStatics = function(t) {
-	var meta = t.__meta__;
-	return meta == null || meta.statics == null?{ }:meta.statics;
-}
 haxe.rtti.Meta.getFields = function(t) {
 	var meta = t.__meta__;
 	return meta == null || meta.fields == null?{ }:meta.fields;
 }
-var js = js || {}
-js.Boot = $hxClasses["js.Boot"] = function() { }
+var js = {}
+js.Boot = function() { }
+$hxClasses["js.Boot"] = js.Boot;
 js.Boot.__name__ = ["js","Boot"];
-js.Boot.__unhtml = function(s) {
-	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-}
-js.Boot.__trace = function(v,i) {
-	var msg = i != null?i.fileName + ":" + i.lineNumber + ": ":"";
-	msg += js.Boot.__string_rec(v,"");
-	var d;
-	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js.Boot.__unhtml(msg) + "<br/>"; else if(typeof(console) != "undefined" && console.log != null) console.log(msg);
-}
-js.Boot.__clear_trace = function() {
-	var d = document.getElementById("haxe:trace");
-	if(d != null) d.innerHTML = "";
-}
-js.Boot.isClass = function(o) {
-	return o.__name__;
-}
-js.Boot.isEnum = function(e) {
-	return e.__ename__;
-}
-js.Boot.getClass = function(o) {
-	return o.__class__;
-}
 js.Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
 	if(s.length >= 5) return "<...>";
@@ -1317,80 +662,234 @@ js.Boot.__interfLoop = function(cc,cl) {
 	return js.Boot.__interfLoop(cc.__super__,cl);
 }
 js.Boot.__instanceof = function(o,cl) {
-	try {
-		if(o instanceof cl) {
-			if(cl == Array) return o.__enum__ == null;
-			return true;
-		}
-		if(js.Boot.__interfLoop(o.__class__,cl)) return true;
-	} catch( e ) {
-		if(cl == null) return false;
-	}
+	if(cl == null) return false;
 	switch(cl) {
 	case Int:
-		return Math.ceil(o%2147483648.0) === o;
+		return (o|0) === o;
 	case Float:
 		return typeof(o) == "number";
 	case Bool:
-		return o === true || o === false;
+		return typeof(o) == "boolean";
 	case String:
 		return typeof(o) == "string";
 	case Dynamic:
 		return true;
 	default:
-		if(o == null) return false;
-		if(cl == Class && o.__name__ != null) return true; else null;
-		if(cl == Enum && o.__ename__ != null) return true; else null;
+		if(o != null) {
+			if(typeof(cl) == "function") {
+				if(o instanceof cl) {
+					if(cl == Array) return o.__enum__ == null;
+					return true;
+				}
+				if(js.Boot.__interfLoop(o.__class__,cl)) return true;
+			}
+		} else return false;
+		if(cl == Class && o.__name__ != null) return true;
+		if(cl == Enum && o.__ename__ != null) return true;
 		return o.__enum__ == cl;
 	}
 }
 js.Boot.__cast = function(o,t) {
 	if(js.Boot.__instanceof(o,t)) return o; else throw "Cannot cast " + Std.string(o) + " to " + Std.string(t);
 }
-js.Lib = $hxClasses["js.Lib"] = function() { }
-js.Lib.__name__ = ["js","Lib"];
-js.Lib.document = null;
-js.Lib.window = null;
-js.Lib.debug = function() {
-	debugger;
-}
-js.Lib.alert = function(v) {
-	alert(js.Boot.__string_rec(v,""));
-}
-js.Lib.eval = function(code) {
-	return eval(code);
-}
-js.Lib.setErrorHandler = function(f) {
-	js.Lib.onerror = f;
-}
-var mcore = mcore || {}
-if(!mcore.data) mcore.data = {}
-mcore.data.Dictionary = $hxClasses["mcore.data.Dictionary"] = function(weakKeys) {
-	if(weakKeys == null) weakKeys = false;
-	this._keys = [];
-	this._values = [];
+js.Browser = function() { }
+$hxClasses["js.Browser"] = js.Browser;
+js.Browser.__name__ = ["js","Browser"];
+var mcore = {}
+mcore.exception = {}
+mcore.exception.Exception = function(message,cause,info) {
+	if(message == null) message = "";
+	this.name = Type.getClassName(Type.getClass(this));
+	this.message = message;
+	this.cause = cause;
+	this.info = info;
 };
-mcore.data.Dictionary.__name__ = ["mcore","data","Dictionary"];
-mcore.data.Dictionary.prototype = {
-	iterator: function() {
-		return HxOverrides.iter(this._keys);
+$hxClasses["mcore.exception.Exception"] = mcore.exception.Exception;
+mcore.exception.Exception.__name__ = ["mcore","exception","Exception"];
+mcore.exception.Exception.getStackTrace = function(source) {
+	return "getStackTrace not supported in js, see: https://groups.google.com/forum/#!searchin/haxelang/exceptionStack$20js/haxelang/oVyR-Bx-yM0/zck4VJFwzlUJ";
+	var s = "";
+	if(s != "") return s;
+	var stack = haxe.CallStack.exceptionStack();
+	while(stack.length > 0) {
+		var _g = stack.shift();
+		var $e = (_g);
+		switch( $e[1] ) {
+		case 2:
+			var line = $e[4], file = $e[3], _g_eFilePos_0 = $e[2];
+			s += "\tat " + file + " (" + line + ")\n";
+			break;
+		case 1:
+			break;
+		case 3:
+			var method = $e[3], classname = $e[2];
+			s += "\tat " + classname + "#" + method + "\n";
+			break;
+		case 4:
+			break;
+		case 0:
+			break;
+		}
+	}
+	return s;
+}
+mcore.exception.Exception.prototype = {
+	toString: function() {
+		var str = this.get_name() + ": " + this.get_message();
+		if(this.info != null) str += " at " + this.info.className + "#" + this.info.methodName + " (" + this.info.lineNumber + ")";
+		if(this.cause != null) str += "\n\t Caused by: " + mcore.exception.Exception.getStackTrace(this.cause);
+		return str;
+	}
+	,info: null
+	,cause: null
+	,get_message: function() {
+		return this.message;
+	}
+	,message: null
+	,get_name: function() {
+		return this.name;
+	}
+	,name: null
+	,__class__: mcore.exception.Exception
+	,__properties__: {get_name:"get_name",get_message:"get_message"}
+}
+mcore.exception.ArgumentException = function(message,cause,info) {
+	if(message == null) message = "";
+	mcore.exception.Exception.call(this,message,cause,info);
+};
+$hxClasses["mcore.exception.ArgumentException"] = mcore.exception.ArgumentException;
+mcore.exception.ArgumentException.__name__ = ["mcore","exception","ArgumentException"];
+mcore.exception.ArgumentException.__super__ = mcore.exception.Exception;
+mcore.exception.ArgumentException.prototype = $extend(mcore.exception.Exception.prototype,{
+	__class__: mcore.exception.ArgumentException
+});
+mcore.util = {}
+mcore.util.Arrays = function() { }
+$hxClasses["mcore.util.Arrays"] = mcore.util.Arrays;
+mcore.util.Arrays.__name__ = ["mcore","util","Arrays"];
+mcore.util.Arrays.toString = function(source) {
+	return source.toString();
+}
+mcore.util.Arrays.shuffle = function(source) {
+	var copy = source.slice();
+	var shuffled = [];
+	while(copy.length > 0) shuffled.push(copy.splice(Std.random(copy.length),1)[0]);
+	return shuffled;
+}
+mcore.util.Arrays.lastItem = function(source) {
+	return source[source.length - 1];
+}
+mcore.util.Reflection = function() { }
+$hxClasses["mcore.util.Reflection"] = mcore.util.Reflection;
+mcore.util.Reflection.__name__ = ["mcore","util","Reflection"];
+mcore.util.Reflection.setProperty = function(object,property,value) {
+	Reflect.setProperty(object,property,value);
+	return value;
+}
+mcore.util.Reflection.hasProperty = function(object,property) {
+	var properties = Type.getInstanceFields(Type.getClass(object));
+	return Lambda.has(properties,property);
+}
+mcore.util.Reflection.getFields = function(object) {
+	return (function($this) {
+		var $r;
+		var _g = Type["typeof"](object);
+		$r = (function($this) {
+			var $r;
+			var $e = (_g);
+			switch( $e[1] ) {
+			case 6:
+				var c = $e[2];
+				$r = Type.getInstanceFields(c);
+				break;
+			default:
+				$r = Reflect.fields(object);
+			}
+			return $r;
+		}($this));
+		return $r;
+	}(this));
+}
+mcore.util.Reflection.here = function(info) {
+	return info;
+}
+mcore.util.Reflection.callMethod = function(o,func,args) {
+	if(args == null) args = [];
+	try {
+		return func.apply(o,args);
+	} catch( e ) {
+		throw new mcore.exception.Exception("Error calling method " + Type.getClassName(Type.getClass(o)) + "." + Std.string(func) + "(" + args.toString() + ")",e,{ fileName : "Reflection.hx", lineNumber : 111, className : "mcore.util.Reflection", methodName : "callMethod"});
+	}
+}
+mcore.util.Types = function() { }
+$hxClasses["mcore.util.Types"] = mcore.util.Types;
+mcore.util.Types.__name__ = ["mcore","util","Types"];
+mcore.util.Types.isSubClassOf = function(object,type) {
+	return js.Boot.__instanceof(object,type) && Type.getClass(object) != type;
+}
+mcore.util.Types.createInstance = function(forClass,args) {
+	if(args == null) args = [];
+	try {
+		return Type.createInstance(forClass,args);
+	} catch( e ) {
+		throw new mcore.exception.Exception("Error creating instance of " + Type.getClassName(forClass) + "(" + args.toString() + ")",e,{ fileName : "Types.hx", lineNumber : 65, className : "mcore.util.Types", methodName : "createInstance"});
+	}
+}
+var mdata = {}
+mdata.Dictionary = function(weakKeys) {
+	if(weakKeys == null) weakKeys = false;
+	this.weakKeys = weakKeys;
+	this.clear();
+};
+$hxClasses["mdata.Dictionary"] = mdata.Dictionary;
+mdata.Dictionary.__name__ = ["mdata","Dictionary"];
+mdata.Dictionary.prototype = {
+	toString: function() {
+		var s = "{";
+		var $it0 = this.keys();
+		while( $it0.hasNext() ) {
+			var key = $it0.next();
+			var value = this.get(key);
+			var k = js.Boot.__instanceof(key,Array)?"[" + key.toString() + "]":Std.string(key);
+			var v = js.Boot.__instanceof(value,Array)?"[" + value.toString() + "]":Std.string(value);
+			s += k + " => " + v + ", ";
+		}
+		if(s.length > 2) s = HxOverrides.substr(s,0,s.length - 2);
+		return s + "}";
+	}
+	,iterator: function() {
+		return HxOverrides.iter(this._values);
 	}
 	,keys: function() {
-		return this._keys;
+		return HxOverrides.iter(this._keys);
+	}
+	,clear: function() {
+		this._keys = [];
+		this._values = [];
 	}
 	,exists: function(key) {
-		return this.get(key) != null;
+		var _g = 0, _g1 = this._keys;
+		while(_g < _g1.length) {
+			var k = _g1[_g];
+			++_g;
+			if(k == key) return true;
+		}
+		return false;
 	}
 	,'delete': function(key) {
+		this.remove(key);
+	}
+	,remove: function(key) {
 		var _g1 = 0, _g = this._keys.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			if(this._keys[i] == key) {
 				this._keys.splice(i,1);
 				this._values.splice(i,1);
-				return;
+				return true;
 			}
 		}
+		return false;
 	}
 	,get: function(key) {
 		var _g1 = 0, _g = this._keys.length;
@@ -1413,73 +912,24 @@ mcore.data.Dictionary.prototype = {
 		this._keys.push(key);
 		this._values.push(value);
 	}
+	,weakKeys: null
 	,_values: null
 	,_keys: null
-	,__class__: mcore.data.Dictionary
+	,__class__: mdata.Dictionary
 }
-if(!mcore.util) mcore.util = {}
-mcore.util.Reflection = $hxClasses["mcore.util.Reflection"] = function() { }
-mcore.util.Reflection.__name__ = ["mcore","util","Reflection"];
-mcore.util.Reflection.setProperty = function(object,property,value) {
-	var hasSetter = object["set_" + property] != null;
-	if(hasSetter) Reflect.field(object,"set_" + property).apply(object,[value]); else object[property] = value;
-	return value;
-}
-mcore.util.Reflection.hasProperty = function(object,property) {
-	var properties = Type.getInstanceFields(Type.getClass(object));
-	return Lambda.has(properties,property);
-}
-mcore.util.Reflection.getFields = function(object) {
-	return (function($this) {
-		var $r;
-		var $e = (Type["typeof"](object));
-		switch( $e[1] ) {
-		case 6:
-			var c = $e[2];
-			$r = Type.getInstanceFields(c);
-			break;
-		default:
-			$r = Reflect.fields(object);
-		}
-		return $r;
-	}(this));
-}
-mcore.util.Reflection.here = function(info) {
-	return info;
-}
-mcore.util.Reflection.callMethod = function(o,func,args) {
-	if(args == null) args = [];
-	try {
-		return func.apply(o,args);
-	} catch( e ) {
-		throw "Error calling method " + Type.getClassName(Type.getClass(o)) + "." + Std.string(func) + "(" + args.toString() + ")";
-	}
-}
-mcore.util.Types = $hxClasses["mcore.util.Types"] = function() { }
-mcore.util.Types.__name__ = ["mcore","util","Types"];
-mcore.util.Types.isSubClassOf = function(object,type) {
-	return js.Boot.__instanceof(object,type) && Type.getClass(object) != type;
-}
-mcore.util.Types.createInstance = function(forClass,args) {
-	if(args == null) args = [];
-	try {
-		return Type.createInstance(forClass,args);
-	} catch( e ) {
-		throw "Error creating instance of " + Type.getClassName(forClass) + "(" + args.toString() + ")";
-	}
-}
-var minject = minject || {}
-minject.InjectionConfig = $hxClasses["minject.InjectionConfig"] = function(request,injectionName) {
+var minject = {}
+minject.InjectionConfig = function(request,injectionName) {
 	this.request = request;
 	this.injectionName = injectionName;
 };
+$hxClasses["minject.InjectionConfig"] = minject.InjectionConfig;
 minject.InjectionConfig.__name__ = ["minject","InjectionConfig"];
 minject.InjectionConfig.prototype = {
 	setInjector: function(injector) {
 		this.injector = injector;
 	}
 	,setResult: function(result) {
-		if(this.result != null && result != null) haxe.Log.trace("Warning: Injector already has a rule for type \"" + Type.getClassName(this.request) + "\", named \"" + this.injectionName + "\".\nIf you have overwritten this mapping intentionally " + "you can use \"injector.unmap()\" prior to your replacement " + "mapping in order to avoid seeing this message.",{ fileName : "InjectionConfig.hx", lineNumber : 74, className : "minject.InjectionConfig", methodName : "setResult"});
+		if(this.result != null && result != null) console.log("Warning: Injector already has a rule for type \"" + Type.getClassName(this.request) + "\", named \"" + this.injectionName + "\".\nIf you have overwritten this mapping intentionally " + "you can use \"injector.unmap()\" prior to your replacement " + "mapping in order to avoid seeing this message.");
 		this.result = result;
 	}
 	,hasOwnResponse: function() {
@@ -1501,11 +951,12 @@ minject.InjectionConfig.prototype = {
 	,request: null
 	,__class__: minject.InjectionConfig
 }
-minject.Injector = $hxClasses["minject.Injector"] = function() {
-	this.injectionConfigs = new Hash();
+minject.Injector = function() {
+	this.injectionConfigs = new haxe.ds.StringMap();
 	this.injecteeDescriptions = new minject.ClassHash();
-	this.attendedToInjectees = new mcore.data.Dictionary();
+	this.attendedToInjectees = new minject._Injector.InjecteeSet();
 };
+$hxClasses["minject.Injector"] = minject.Injector;
 minject.Injector.__name__ = ["minject","Injector"];
 minject.Injector.prototype = {
 	getFields: function(type) {
@@ -1526,7 +977,7 @@ minject.Injector.prototype = {
 		if(forClass == null) return "Dynamic"; else return Type.getClassName(forClass);
 	}
 	,set_parentInjector: function(value) {
-		if(this.parentInjector != null && value == null) this.attendedToInjectees = new mcore.data.Dictionary();
+		if(this.parentInjector != null && value == null) this.attendedToInjectees = new minject._Injector.InjecteeSet();
 		this.parentInjector = value;
 		if(this.parentInjector != null) this.attendedToInjectees = this.parentInjector.attendedToInjectees;
 		return this.parentInjector;
@@ -1628,8 +1079,8 @@ minject.Injector.prototype = {
 		return instance;
 	}
 	,injectInto: function(target) {
-		if(this.attendedToInjectees.exists(target)) return;
-		this.attendedToInjectees.set(target,true);
+		if(this.attendedToInjectees.contains(target)) return;
+		this.attendedToInjectees.add(target);
 		var targetClass = Type.getClass(target);
 		var injecteeDescription = null;
 		if(this.injecteeDescriptions.exists(targetClass)) injecteeDescription = this.injecteeDescriptions.get(targetClass); else injecteeDescription = this.getInjectionPoints(targetClass);
@@ -1686,9 +1137,30 @@ minject.Injector.prototype = {
 	,__class__: minject.Injector
 	,__properties__: {set_parentInjector:"set_parentInjector"}
 }
-minject.ClassHash = $hxClasses["minject.ClassHash"] = function() {
-	this.hash = new Hash();
+minject._Injector = {}
+minject._Injector.InjecteeSet = function() {
 };
+$hxClasses["minject._Injector.InjecteeSet"] = minject._Injector.InjecteeSet;
+minject._Injector.InjecteeSet.__name__ = ["minject","_Injector","InjecteeSet"];
+minject._Injector.InjecteeSet.prototype = {
+	iterator: function() {
+		return HxOverrides.iter([]);
+	}
+	,'delete': function(value) {
+		Reflect.deleteField(value,"__injected__");
+	}
+	,contains: function(value) {
+		return value.__injected__ == true;
+	}
+	,add: function(value) {
+		value.__injected__ = true;
+	}
+	,__class__: minject._Injector.InjecteeSet
+}
+minject.ClassHash = function() {
+	this.hash = new haxe.ds.StringMap();
+};
+$hxClasses["minject.ClassHash"] = minject.ClassHash;
 minject.ClassHash.__name__ = ["minject","ClassHash"];
 minject.ClassHash.prototype = {
 	exists: function(key) {
@@ -1703,18 +1175,20 @@ minject.ClassHash.prototype = {
 	,hash: null
 	,__class__: minject.ClassHash
 }
-minject.InjecteeDescription = $hxClasses["minject.InjecteeDescription"] = function(ctor,injectionPoints) {
+minject.InjecteeDescription = function(ctor,injectionPoints) {
 	this.ctor = ctor;
 	this.injectionPoints = injectionPoints;
 };
+$hxClasses["minject.InjecteeDescription"] = minject.InjecteeDescription;
 minject.InjecteeDescription.__name__ = ["minject","InjecteeDescription"];
 minject.InjecteeDescription.prototype = {
 	injectionPoints: null
 	,ctor: null
 	,__class__: minject.InjecteeDescription
 }
-minject.Reflector = $hxClasses["minject.Reflector"] = function() {
+minject.Reflector = function() {
 };
+$hxClasses["minject.Reflector"] = minject.Reflector;
 minject.Reflector.__name__ = ["minject","Reflector"];
 minject.Reflector.prototype = {
 	getFQCN: function(value) {
@@ -1739,10 +1213,11 @@ minject.Reflector.prototype = {
 	}
 	,__class__: minject.Reflector
 }
-if(!minject.point) minject.point = {}
-minject.point.InjectionPoint = $hxClasses["minject.point.InjectionPoint"] = function(meta,injector) {
+minject.point = {}
+minject.point.InjectionPoint = function(meta,injector) {
 	this.initializeInjection(meta);
 };
+$hxClasses["minject.point.InjectionPoint"] = minject.point.InjectionPoint;
 minject.point.InjectionPoint.__name__ = ["minject","point","InjectionPoint"];
 minject.point.InjectionPoint.prototype = {
 	initializeInjection: function(meta) {
@@ -1752,10 +1227,11 @@ minject.point.InjectionPoint.prototype = {
 	}
 	,__class__: minject.point.InjectionPoint
 }
-minject.point.MethodInjectionPoint = $hxClasses["minject.point.MethodInjectionPoint"] = function(meta,injector) {
+minject.point.MethodInjectionPoint = function(meta,injector) {
 	this.requiredParameters = 0;
 	minject.point.InjectionPoint.call(this,meta,injector);
 };
+$hxClasses["minject.point.MethodInjectionPoint"] = minject.point.MethodInjectionPoint;
 minject.point.MethodInjectionPoint.__name__ = ["minject","point","MethodInjectionPoint"];
 minject.point.MethodInjectionPoint.__super__ = minject.point.InjectionPoint;
 minject.point.MethodInjectionPoint.prototype = $extend(minject.point.InjectionPoint.prototype,{
@@ -1811,9 +1287,10 @@ minject.point.MethodInjectionPoint.prototype = $extend(minject.point.InjectionPo
 	,methodName: null
 	,__class__: minject.point.MethodInjectionPoint
 });
-minject.point.ConstructorInjectionPoint = $hxClasses["minject.point.ConstructorInjectionPoint"] = function(meta,forClass,injector) {
+minject.point.ConstructorInjectionPoint = function(meta,forClass,injector) {
 	minject.point.MethodInjectionPoint.call(this,meta,injector);
 };
+$hxClasses["minject.point.ConstructorInjectionPoint"] = minject.point.ConstructorInjectionPoint;
 minject.point.ConstructorInjectionPoint.__name__ = ["minject","point","ConstructorInjectionPoint"];
 minject.point.ConstructorInjectionPoint.__super__ = minject.point.MethodInjectionPoint;
 minject.point.ConstructorInjectionPoint.prototype = $extend(minject.point.MethodInjectionPoint.prototype,{
@@ -1828,19 +1305,21 @@ minject.point.ConstructorInjectionPoint.prototype = $extend(minject.point.Method
 	}
 	,__class__: minject.point.ConstructorInjectionPoint
 });
-minject.point.ParameterInjectionConfig = $hxClasses["minject.point.ParameterInjectionConfig"] = function(typeName,injectionName) {
+minject.point.ParameterInjectionConfig = function(typeName,injectionName) {
 	this.typeName = typeName;
 	this.injectionName = injectionName;
 };
+$hxClasses["minject.point.ParameterInjectionConfig"] = minject.point.ParameterInjectionConfig;
 minject.point.ParameterInjectionConfig.__name__ = ["minject","point","ParameterInjectionConfig"];
 minject.point.ParameterInjectionConfig.prototype = {
 	injectionName: null
 	,typeName: null
 	,__class__: minject.point.ParameterInjectionConfig
 }
-minject.point.NoParamsConstructorInjectionPoint = $hxClasses["minject.point.NoParamsConstructorInjectionPoint"] = function() {
+minject.point.NoParamsConstructorInjectionPoint = function() {
 	minject.point.InjectionPoint.call(this,null,null);
 };
+$hxClasses["minject.point.NoParamsConstructorInjectionPoint"] = minject.point.NoParamsConstructorInjectionPoint;
 minject.point.NoParamsConstructorInjectionPoint.__name__ = ["minject","point","NoParamsConstructorInjectionPoint"];
 minject.point.NoParamsConstructorInjectionPoint.__super__ = minject.point.InjectionPoint;
 minject.point.NoParamsConstructorInjectionPoint.prototype = $extend(minject.point.InjectionPoint.prototype,{
@@ -1849,10 +1328,11 @@ minject.point.NoParamsConstructorInjectionPoint.prototype = $extend(minject.poin
 	}
 	,__class__: minject.point.NoParamsConstructorInjectionPoint
 });
-minject.point.PostConstructInjectionPoint = $hxClasses["minject.point.PostConstructInjectionPoint"] = function(meta,injector) {
+minject.point.PostConstructInjectionPoint = function(meta,injector) {
 	this.order = 0;
 	minject.point.InjectionPoint.call(this,meta,injector);
 };
+$hxClasses["minject.point.PostConstructInjectionPoint"] = minject.point.PostConstructInjectionPoint;
 minject.point.PostConstructInjectionPoint.__name__ = ["minject","point","PostConstructInjectionPoint"];
 minject.point.PostConstructInjectionPoint.__super__ = minject.point.InjectionPoint;
 minject.point.PostConstructInjectionPoint.prototype = $extend(minject.point.InjectionPoint.prototype,{
@@ -1868,37 +1348,34 @@ minject.point.PostConstructInjectionPoint.prototype = $extend(minject.point.Inje
 	,order: null
 	,__class__: minject.point.PostConstructInjectionPoint
 });
-minject.point.PropertyInjectionPoint = $hxClasses["minject.point.PropertyInjectionPoint"] = function(meta,injector) {
+minject.point.PropertyInjectionPoint = function(meta,injector) {
 	minject.point.InjectionPoint.call(this,meta,null);
 };
+$hxClasses["minject.point.PropertyInjectionPoint"] = minject.point.PropertyInjectionPoint;
 minject.point.PropertyInjectionPoint.__name__ = ["minject","point","PropertyInjectionPoint"];
 minject.point.PropertyInjectionPoint.__super__ = minject.point.InjectionPoint;
 minject.point.PropertyInjectionPoint.prototype = $extend(minject.point.InjectionPoint.prototype,{
 	initializeInjection: function(meta) {
 		this.propertyType = meta.type[0];
-		this.hasSetter = meta.setter != null;
-		if(this.hasSetter) this.propertyName = meta.setter[0]; else this.propertyName = meta.name[0];
+		this.propertyName = meta.name[0];
 		if(meta.inject == null) this.injectionName = ""; else this.injectionName = meta.inject[0];
 	}
 	,applyInjection: function(target,injector) {
 		var injectionConfig = injector.getMapping(Type.resolveClass(this.propertyType),this.injectionName);
 		var injection = injectionConfig.getResponse(injector);
 		if(injection == null) throw "Injector is missing a rule to handle injection into property \"" + this.propertyName + "\" of object \"" + Std.string(target) + "\". Target dependency: \"" + this.propertyType + "\", named \"" + this.injectionName + "\"";
-		if(this.hasSetter) {
-			var setter = Reflect.field(target,this.propertyName);
-			mcore.util.Reflection.callMethod(target,setter,[injection]);
-		} else target[this.propertyName] = injection;
+		Reflect.setProperty(target,this.propertyName,injection);
 		return target;
 	}
-	,hasSetter: null
 	,injectionName: null
 	,propertyType: null
 	,propertyName: null
 	,__class__: minject.point.PropertyInjectionPoint
 });
-if(!minject.result) minject.result = {}
-minject.result.InjectionResult = $hxClasses["minject.result.InjectionResult"] = function() {
+minject.result = {}
+minject.result.InjectionResult = function() {
 };
+$hxClasses["minject.result.InjectionResult"] = minject.result.InjectionResult;
 minject.result.InjectionResult.__name__ = ["minject","result","InjectionResult"];
 minject.result.InjectionResult.prototype = {
 	getResponse: function(injector) {
@@ -1906,10 +1383,11 @@ minject.result.InjectionResult.prototype = {
 	}
 	,__class__: minject.result.InjectionResult
 }
-minject.result.InjectClassResult = $hxClasses["minject.result.InjectClassResult"] = function(responseType) {
+minject.result.InjectClassResult = function(responseType) {
 	minject.result.InjectionResult.call(this);
 	this.responseType = responseType;
 };
+$hxClasses["minject.result.InjectClassResult"] = minject.result.InjectClassResult;
 minject.result.InjectClassResult.__name__ = ["minject","result","InjectClassResult"];
 minject.result.InjectClassResult.__super__ = minject.result.InjectionResult;
 minject.result.InjectClassResult.prototype = $extend(minject.result.InjectionResult.prototype,{
@@ -1919,10 +1397,11 @@ minject.result.InjectClassResult.prototype = $extend(minject.result.InjectionRes
 	,responseType: null
 	,__class__: minject.result.InjectClassResult
 });
-minject.result.InjectOtherRuleResult = $hxClasses["minject.result.InjectOtherRuleResult"] = function(rule) {
+minject.result.InjectOtherRuleResult = function(rule) {
 	minject.result.InjectionResult.call(this);
 	this.rule = rule;
 };
+$hxClasses["minject.result.InjectOtherRuleResult"] = minject.result.InjectOtherRuleResult;
 minject.result.InjectOtherRuleResult.__name__ = ["minject","result","InjectOtherRuleResult"];
 minject.result.InjectOtherRuleResult.__super__ = minject.result.InjectionResult;
 minject.result.InjectOtherRuleResult.prototype = $extend(minject.result.InjectionResult.prototype,{
@@ -1932,10 +1411,11 @@ minject.result.InjectOtherRuleResult.prototype = $extend(minject.result.Injectio
 	,rule: null
 	,__class__: minject.result.InjectOtherRuleResult
 });
-minject.result.InjectSingletonResult = $hxClasses["minject.result.InjectSingletonResult"] = function(responseType) {
+minject.result.InjectSingletonResult = function(responseType) {
 	minject.result.InjectionResult.call(this);
 	this.responseType = responseType;
 };
+$hxClasses["minject.result.InjectSingletonResult"] = minject.result.InjectSingletonResult;
 minject.result.InjectSingletonResult.__name__ = ["minject","result","InjectSingletonResult"];
 minject.result.InjectSingletonResult.__super__ = minject.result.InjectionResult;
 minject.result.InjectSingletonResult.prototype = $extend(minject.result.InjectionResult.prototype,{
@@ -1950,10 +1430,11 @@ minject.result.InjectSingletonResult.prototype = $extend(minject.result.Injectio
 	,responseType: null
 	,__class__: minject.result.InjectSingletonResult
 });
-minject.result.InjectValueResult = $hxClasses["minject.result.InjectValueResult"] = function(value) {
+minject.result.InjectValueResult = function(value) {
 	minject.result.InjectionResult.call(this);
 	this.value = value;
 };
+$hxClasses["minject.result.InjectValueResult"] = minject.result.InjectValueResult;
 minject.result.InjectValueResult.__name__ = ["minject","result","InjectValueResult"];
 minject.result.InjectValueResult.__super__ = minject.result.InjectionResult;
 minject.result.InjectValueResult.prototype = $extend(minject.result.InjectionResult.prototype,{
@@ -1963,7 +1444,8 @@ minject.result.InjectValueResult.prototype = $extend(minject.result.InjectionRes
 	,value: null
 	,__class__: minject.result.InjectValueResult
 });
-mmvc.api.ICommandMap = $hxClasses["mmvc.api.ICommandMap"] = function() { }
+mmvc.api.ICommandMap = function() { }
+$hxClasses["mmvc.api.ICommandMap"] = mmvc.api.ICommandMap;
 mmvc.api.ICommandMap.__name__ = ["mmvc","api","ICommandMap"];
 mmvc.api.ICommandMap.prototype = {
 	release: null
@@ -1975,7 +1457,8 @@ mmvc.api.ICommandMap.prototype = {
 	,mapSignal: null
 	,__class__: mmvc.api.ICommandMap
 }
-mmvc.api.IMediator = $hxClasses["mmvc.api.IMediator"] = function() { }
+mmvc.api.IMediator = function() { }
+$hxClasses["mmvc.api.IMediator"] = mmvc.api.IMediator;
 mmvc.api.IMediator.__name__ = ["mmvc","api","IMediator"];
 mmvc.api.IMediator.prototype = {
 	setViewComponent: null
@@ -1986,7 +1469,8 @@ mmvc.api.IMediator.prototype = {
 	,preRegister: null
 	,__class__: mmvc.api.IMediator
 }
-mmvc.api.IMediatorMap = $hxClasses["mmvc.api.IMediatorMap"] = function() { }
+mmvc.api.IMediatorMap = function() { }
+$hxClasses["mmvc.api.IMediatorMap"] = mmvc.api.IMediatorMap;
 mmvc.api.IMediatorMap.__name__ = ["mmvc","api","IMediatorMap"];
 mmvc.api.IMediatorMap.prototype = {
 	enabled: null
@@ -2002,9 +1486,9 @@ mmvc.api.IMediatorMap.prototype = {
 	,unmapView: null
 	,mapView: null
 	,__class__: mmvc.api.IMediatorMap
-	,__properties__: {set_contextView:"set_contextView",set_enabled:"set_enabled"}
 }
-mmvc.api.IViewContainer = $hxClasses["mmvc.api.IViewContainer"] = function() { }
+mmvc.api.IViewContainer = function() { }
+$hxClasses["mmvc.api.IViewContainer"] = mmvc.api.IViewContainer;
 mmvc.api.IViewContainer.__name__ = ["mmvc","api","IViewContainer"];
 mmvc.api.IViewContainer.prototype = {
 	isAdded: null
@@ -2012,7 +1496,8 @@ mmvc.api.IViewContainer.prototype = {
 	,viewAdded: null
 	,__class__: mmvc.api.IViewContainer
 }
-mmvc.api.IViewMap = $hxClasses["mmvc.api.IViewMap"] = function() { }
+mmvc.api.IViewMap = function() { }
+$hxClasses["mmvc.api.IViewMap"] = mmvc.api.IViewMap;
 mmvc.api.IViewMap.__name__ = ["mmvc","api","IViewMap"];
 mmvc.api.IViewMap.prototype = {
 	enabled: null
@@ -2024,15 +1509,15 @@ mmvc.api.IViewMap.prototype = {
 	,unmapPackage: null
 	,mapPackage: null
 	,__class__: mmvc.api.IViewMap
-	,__properties__: {set_contextView:"set_contextView",set_enabled:"set_enabled"}
 }
-if(!mmvc.base) mmvc.base = {}
-mmvc.base.CommandMap = $hxClasses["mmvc.base.CommandMap"] = function(injector) {
+mmvc.base = {}
+mmvc.base.CommandMap = function(injector) {
 	this.injector = injector;
-	this.signalMap = new mcore.data.Dictionary();
-	this.signalClassMap = new mcore.data.Dictionary();
-	this.detainedCommands = new mcore.data.Dictionary();
+	this.signalMap = new mdata.Dictionary();
+	this.signalClassMap = new mdata.Dictionary();
+	this.detainedCommands = new mdata.Dictionary();
 };
+$hxClasses["mmvc.base.CommandMap"] = mmvc.base.CommandMap;
 mmvc.base.CommandMap.__name__ = ["mmvc","base","CommandMap"];
 mmvc.base.CommandMap.__interfaces__ = [mmvc.api.ICommandMap];
 mmvc.base.CommandMap.prototype = {
@@ -2066,15 +1551,8 @@ mmvc.base.CommandMap.prototype = {
 		this.injector.unmap(msignal.Signal);
 		this.unmapSignalValues(signal.valueClasses,valueObjects);
 		command.execute();
+		this.injector.attendedToInjectees["delete"](command);
 		if(oneshot) this.unmapSignal(signal,commandClass);
-	}
-	,unmapSignal: function(signal,commandClass) {
-		var callbacksByCommandClass = this.signalMap.get(signal);
-		if(callbacksByCommandClass == null) return;
-		var callbackFunction = callbacksByCommandClass.get(commandClass);
-		if(callbackFunction == null) return;
-		signal.remove(callbackFunction);
-		callbacksByCommandClass["delete"](commandClass);
 	}
 	,hasSignalCommand: function(signal,commandClass) {
 		var callbacksByCommandClass = this.signalMap.get(signal);
@@ -2082,37 +1560,52 @@ mmvc.base.CommandMap.prototype = {
 		var callbackFunction = callbacksByCommandClass.get(commandClass);
 		return callbackFunction != null;
 	}
+	,hasCommand: function(signal) {
+		var callbacksByCommandClass = this.signalMap.get(signal);
+		if(callbacksByCommandClass == null) return false;
+		var count = 0;
+		var $it0 = callbacksByCommandClass.iterator();
+		while( $it0.hasNext() ) {
+			var key = $it0.next();
+			count++;
+		}
+		return count > 0;
+	}
 	,createSignalClassInstance: function(signalClass) {
 		var injectorForSignalInstance = this.injector;
-		var signal;
 		if(this.injector.hasMapping(minject.Injector)) injectorForSignalInstance = this.injector.getInstance(minject.Injector);
-		signal = injectorForSignalInstance.instantiate(signalClass);
+		var signal = injectorForSignalInstance.instantiate(signalClass);
 		injectorForSignalInstance.mapValue(signalClass,signal);
 		this.signalClassMap.set(signalClass,signal);
 		return signal;
 	}
 	,getSignalClassInstance: function(signalClass) {
 		if(this.signalClassMap.exists(signalClass)) return js.Boot.__cast(this.signalClassMap.get(signalClass) , msignal.Signal);
-		var signal = this.createSignalClassInstance(signalClass);
-		this.signalClassMap.set(signalClass,signal);
-		return signal;
+		return this.createSignalClassInstance(signalClass);
+	}
+	,unmapSignal: function(signal,commandClass) {
+		var callbacksByCommandClass = this.signalMap.get(signal);
+		if(callbacksByCommandClass == null) return;
+		var callbackFunction = callbacksByCommandClass.get(commandClass);
+		if(callbackFunction == null) return;
+		if(!this.hasCommand(signal)) this.signalMap["delete"](signal);
+		signal.remove(callbackFunction);
+		callbacksByCommandClass["delete"](commandClass);
 	}
 	,unmapSignalClass: function(signalClass,commandClass) {
-		this.unmapSignal(this.getSignalClassInstance(signalClass),commandClass);
-		this.injector.unmap(signalClass);
-	}
-	,mapSignalClass: function(signalClass,commandClass,oneShot) {
-		if(oneShot == null) oneShot = false;
 		var signal = this.getSignalClassInstance(signalClass);
-		this.mapSignal(signal,commandClass,oneShot);
-		return signal;
+		this.unmapSignal(signal,commandClass);
+		if(!this.hasCommand(signal)) {
+			this.injector.unmap(signalClass);
+			this.signalClassMap["delete"](signalClass);
+		}
 	}
 	,mapSignal: function(signal,commandClass,oneShot) {
 		if(oneShot == null) oneShot = false;
 		if(this.hasSignalCommand(signal,commandClass)) return;
 		var signalCommandMap;
 		if(this.signalMap.exists(signal)) signalCommandMap = this.signalMap.get(signal); else {
-			signalCommandMap = new mcore.data.Dictionary(false);
+			signalCommandMap = new mdata.Dictionary(false);
 			this.signalMap.set(signal,signalCommandMap);
 		}
 		var me = this;
@@ -2122,27 +1615,35 @@ mmvc.base.CommandMap.prototype = {
 		signalCommandMap.set(commandClass,callbackFunction);
 		signal.add(callbackFunction);
 	}
+	,mapSignalClass: function(signalClass,commandClass,oneShot) {
+		if(oneShot == null) oneShot = false;
+		var signal = this.getSignalClassInstance(signalClass);
+		this.mapSignal(signal,commandClass,oneShot);
+		return signal;
+	}
 	,detainedCommands: null
 	,signalClassMap: null
 	,signalMap: null
 	,injector: null
 	,__class__: mmvc.base.CommandMap
 }
-mmvc.base.ContextError = $hxClasses["mmvc.base.ContextError"] = function(message,id) {
+mmvc.base.ContextError = function(message,id) {
 	if(id == null) id = 0;
 	if(message == null) message = "";
 	this.message = message;
 	this.id = id;
 };
+$hxClasses["mmvc.base.ContextError"] = mmvc.base.ContextError;
 mmvc.base.ContextError.__name__ = ["mmvc","base","ContextError"];
 mmvc.base.ContextError.prototype = {
 	id: null
 	,message: null
 	,__class__: mmvc.base.ContextError
 }
-mmvc.base.MediatorBase = $hxClasses["mmvc.base.MediatorBase"] = function() {
+mmvc.base.MediatorBase = function() {
 	this.slots = [];
 };
+$hxClasses["mmvc.base.MediatorBase"] = mmvc.base.MediatorBase;
 mmvc.base.MediatorBase.__name__ = ["mmvc","base","MediatorBase"];
 mmvc.base.MediatorBase.__interfaces__ = [mmvc.api.IMediator];
 mmvc.base.MediatorBase.prototype = {
@@ -2178,12 +1679,13 @@ mmvc.base.MediatorBase.prototype = {
 	,view: null
 	,__class__: mmvc.base.MediatorBase
 }
-mmvc.base.ViewMapBase = $hxClasses["mmvc.base.ViewMapBase"] = function(contextView,injector) {
+mmvc.base.ViewMapBase = function(contextView,injector) {
 	this.viewListenerCount = 0;
 	this.set_enabled(true);
 	this.injector = injector;
 	this.set_contextView(contextView);
 };
+$hxClasses["mmvc.base.ViewMapBase"] = mmvc.base.ViewMapBase;
 mmvc.base.ViewMapBase.__name__ = ["mmvc","base","ViewMapBase"];
 mmvc.base.ViewMapBase.prototype = {
 	onViewRemoved: function(view) {
@@ -2217,15 +1719,16 @@ mmvc.base.ViewMapBase.prototype = {
 	,__class__: mmvc.base.ViewMapBase
 	,__properties__: {set_contextView:"set_contextView",set_enabled:"set_enabled"}
 }
-mmvc.base.MediatorMap = $hxClasses["mmvc.base.MediatorMap"] = function(contextView,injector,reflector) {
+mmvc.base.MediatorMap = function(contextView,injector,reflector) {
 	mmvc.base.ViewMapBase.call(this,contextView,injector);
 	this.reflector = reflector;
-	this.mediatorByView = new mcore.data.Dictionary(true);
-	this.mappingConfigByView = new mcore.data.Dictionary(true);
-	this.mappingConfigByViewClassName = new mcore.data.Dictionary();
-	this.mediatorsMarkedForRemoval = new mcore.data.Dictionary();
+	this.mediatorByView = new mdata.Dictionary(true);
+	this.mappingConfigByView = new mdata.Dictionary(true);
+	this.mappingConfigByViewClassName = new mdata.Dictionary();
+	this.mediatorsMarkedForRemoval = new mdata.Dictionary();
 	this.hasMediatorsMarkedForRemoval = false;
 };
+$hxClasses["mmvc.base.MediatorMap"] = mmvc.base.MediatorMap;
 mmvc.base.MediatorMap.__name__ = ["mmvc","base","MediatorMap"];
 mmvc.base.MediatorMap.__interfaces__ = [mmvc.api.IMediatorMap];
 mmvc.base.MediatorMap.__super__ = mmvc.base.ViewMapBase;
@@ -2289,7 +1792,7 @@ mmvc.base.MediatorMap.prototype = $extend(mmvc.base.ViewMapBase.prototype,{
 		}
 	}
 	,hasMediator: function(mediator) {
-		var $it0 = this.mediatorByView.iterator();
+		var $it0 = this.mediatorByView.keys();
 		while( $it0.hasNext() ) {
 			var key = $it0.next();
 			if(this.mediatorByView.get(key) == mediator) return true;
@@ -2307,7 +1810,9 @@ mmvc.base.MediatorMap.prototype = $extend(mmvc.base.ViewMapBase.prototype,{
 		return this.mediatorByView.get(viewComponent);
 	}
 	,removeMediatorByView: function(viewComponent) {
-		return this.removeMediator(this.retrieveMediator(viewComponent));
+		var mediator = this.removeMediator(this.retrieveMediator(viewComponent));
+		this.injector.attendedToInjectees["delete"](mediator);
+		return mediator;
 	}
 	,removeMediator: function(mediator) {
 		if(mediator != null) {
@@ -2342,8 +1847,8 @@ mmvc.base.MediatorMap.prototype = $extend(mmvc.base.ViewMapBase.prototype,{
 		if(autoRemove == null) autoRemove = true;
 		if(autoCreate == null) autoCreate = true;
 		var viewClassName = this.reflector.getFQCN(viewClassOrName);
-		if(this.mappingConfigByViewClassName.get(viewClassName) != null) throw new mmvc.base.ContextError(mmvc.base.ContextError.E_MEDIATORMAP_OVR + " - " + Std.string(mediatorClass));
-		if(this.reflector.classExtendsOrImplements(mediatorClass,mmvc.api.IMediator) == false) throw new mmvc.base.ContextError(mmvc.base.ContextError.E_MEDIATORMAP_NOIMPL + " - " + Std.string(mediatorClass));
+		if(this.mappingConfigByViewClassName.get(viewClassName) != null) throw new mmvc.base.ContextError("Mediator Class has already been mapped to a View Class in this context - " + Std.string(mediatorClass));
+		if(this.reflector.classExtendsOrImplements(mediatorClass,mmvc.api.IMediator) == false) throw new mmvc.base.ContextError("Mediator Class does not implement IMediator - " + Std.string(mediatorClass));
 		var config = new mmvc.base.MappingConfig();
 		config.mediatorClass = mediatorClass;
 		config.autoCreate = autoCreate;
@@ -2366,8 +1871,9 @@ mmvc.base.MediatorMap.prototype = $extend(mmvc.base.ViewMapBase.prototype,{
 	,mediatorByView: null
 	,__class__: mmvc.base.MediatorMap
 });
-mmvc.base.MappingConfig = $hxClasses["mmvc.base.MappingConfig"] = function() {
+mmvc.base.MappingConfig = function() {
 };
+$hxClasses["mmvc.base.MappingConfig"] = mmvc.base.MappingConfig;
 mmvc.base.MappingConfig.__name__ = ["mmvc","base","MappingConfig"];
 mmvc.base.MappingConfig.prototype = {
 	autoRemove: null
@@ -2376,12 +1882,13 @@ mmvc.base.MappingConfig.prototype = {
 	,mediatorClass: null
 	,__class__: mmvc.base.MappingConfig
 }
-mmvc.base.ViewMap = $hxClasses["mmvc.base.ViewMap"] = function(contextView,injector) {
+mmvc.base.ViewMap = function(contextView,injector) {
 	mmvc.base.ViewMapBase.call(this,contextView,injector);
 	this.mappedPackages = new Array();
-	this.mappedTypes = new mcore.data.Dictionary();
-	this.injectedViews = new mcore.data.Dictionary(true);
+	this.mappedTypes = new mdata.Dictionary();
+	this.injectedViews = new mdata.Dictionary(true);
 };
+$hxClasses["mmvc.base.ViewMap"] = mmvc.base.ViewMap;
 mmvc.base.ViewMap.__name__ = ["mmvc","base","ViewMap"];
 mmvc.base.ViewMap.__interfaces__ = [mmvc.api.IViewMap];
 mmvc.base.ViewMap.__super__ = mmvc.base.ViewMapBase;
@@ -2391,7 +1898,7 @@ mmvc.base.ViewMap.prototype = $extend(mmvc.base.ViewMapBase.prototype,{
 		this.injectedViews.set(view,true);
 	}
 	,onViewRemoved: function(view) {
-		haxe.Log.trace("TODO",{ fileName : "ViewMap.hx", lineNumber : 187, className : "mmvc.base.ViewMap", methodName : "onViewRemoved"});
+		console.log("TODO");
 	}
 	,onViewAdded: function(view) {
 		if(this.injectedViews.get(view) != null) return;
@@ -2470,9 +1977,10 @@ mmvc.base.ViewMap.prototype = $extend(mmvc.base.ViewMapBase.prototype,{
 	}
 	,__class__: mmvc.base.ViewMap
 });
-mmvc.impl.Mediator = $hxClasses["mmvc.impl.Mediator"] = function() {
+mmvc.impl.Mediator = function() {
 	mmvc.base.MediatorBase.call(this);
 };
+$hxClasses["mmvc.impl.Mediator"] = mmvc.impl.Mediator;
 mmvc.impl.Mediator.__name__ = ["mmvc","impl","Mediator"];
 mmvc.impl.Mediator.__super__ = mmvc.base.MediatorBase;
 mmvc.impl.Mediator.prototype = $extend(mmvc.base.MediatorBase.prototype,{
@@ -2481,43 +1989,40 @@ mmvc.impl.Mediator.prototype = $extend(mmvc.base.MediatorBase.prototype,{
 	,injector: null
 	,__class__: mmvc.impl.Mediator
 });
-var model = model || {}
-model.ContactsModel = $hxClasses["model.ContactsModel"] = function() {
-	this.signal = new msignal.Signal2();
-};
+var model = {}
+model.ContactsModel = function() { }
+$hxClasses["model.ContactsModel"] = model.ContactsModel;
 model.ContactsModel.__name__ = ["model","ContactsModel"];
 model.ContactsModel.prototype = {
-	setSelectedContact: function(value) {
+	set_selectedContact: function(value) {
 		this._selectedContact = value;
-		this.dispatch(model.ContactsModel.SELECTED_CONTACT_SET,this);
+		this.notiSelectedContactSet.selectedContact = this._selectedContact;
+		this.notiSelectedContactSet.dispatch();
 		return this._selectedContact;
 	}
-	,getSelectedContact: function() {
+	,get_selectedContact: function() {
 		return this._selectedContact;
 	}
 	,_selectedContact: null
-	,selectedContact: null
-	,getContacts: function() {
+	,notiSelectedContactSet: null
+	,get_contacts: function() {
 		return this._contacts;
 	}
-	,setContacts: function(value) {
+	,set_contacts: function(value) {
 		this._contacts = value;
-		this.dispatch(model.ContactsModel.CONTACTS_SET,this);
+		this.notiContactsSet.contacts = this._contacts;
+		this.notiContactsSet.dispatch();
 		return this._contacts;
 	}
 	,_contacts: null
-	,contacts: null
-	,dispatch: function(event,model) {
-		if(model == null) model = this;
-		this.signal.dispatch(event,model);
-	}
-	,signal: null
+	,notiContactsSet: null
 	,__class__: model.ContactsModel
-	,__properties__: {set_contacts:"setContacts",get_contacts:"getContacts",set_selectedContact:"setSelectedContact",get_selectedContact:"getSelectedContact"}
+	,__properties__: {set_contacts:"set_contacts",get_contacts:"get_contacts",set_selectedContact:"set_selectedContact",get_selectedContact:"get_selectedContact"}
 }
-msignal.Signal1 = $hxClasses["msignal.Signal1"] = function(type) {
+msignal.Signal1 = function(type) {
 	msignal.Signal.call(this,[type]);
 };
+$hxClasses["msignal.Signal1"] = msignal.Signal1;
 msignal.Signal1.__name__ = ["msignal","Signal1"];
 msignal.Signal1.__super__ = msignal.Signal;
 msignal.Signal1.prototype = $extend(msignal.Signal.prototype,{
@@ -2535,9 +2040,10 @@ msignal.Signal1.prototype = $extend(msignal.Signal.prototype,{
 	}
 	,__class__: msignal.Signal1
 });
-msignal.Signal2 = $hxClasses["msignal.Signal2"] = function(type1,type2) {
+msignal.Signal2 = function(type1,type2) {
 	msignal.Signal.call(this,[type1,type2]);
 };
+$hxClasses["msignal.Signal2"] = msignal.Signal2;
 msignal.Signal2.__name__ = ["msignal","Signal2"];
 msignal.Signal2.__super__ = msignal.Signal;
 msignal.Signal2.prototype = $extend(msignal.Signal.prototype,{
@@ -2555,7 +2061,7 @@ msignal.Signal2.prototype = $extend(msignal.Signal.prototype,{
 	}
 	,__class__: msignal.Signal2
 });
-msignal.Slot = $hxClasses["msignal.Slot"] = function(signal,listener,once,priority) {
+msignal.Slot = function(signal,listener,once,priority) {
 	if(priority == null) priority = 0;
 	if(once == null) once = false;
 	this.signal = signal;
@@ -2564,6 +2070,7 @@ msignal.Slot = $hxClasses["msignal.Slot"] = function(signal,listener,once,priori
 	this.priority = priority;
 	this.enabled = true;
 };
+$hxClasses["msignal.Slot"] = msignal.Slot;
 msignal.Slot.__name__ = ["msignal","Slot"];
 msignal.Slot.prototype = {
 	set_listener: function(value) {
@@ -2581,11 +2088,12 @@ msignal.Slot.prototype = {
 	,__class__: msignal.Slot
 	,__properties__: {set_listener:"set_listener"}
 }
-msignal.Slot0 = $hxClasses["msignal.Slot0"] = function(signal,listener,once,priority) {
+msignal.Slot0 = function(signal,listener,once,priority) {
 	if(priority == null) priority = 0;
 	if(once == null) once = false;
 	msignal.Slot.call(this,signal,listener,once,priority);
 };
+$hxClasses["msignal.Slot0"] = msignal.Slot0;
 msignal.Slot0.__name__ = ["msignal","Slot0"];
 msignal.Slot0.__super__ = msignal.Slot;
 msignal.Slot0.prototype = $extend(msignal.Slot.prototype,{
@@ -2596,11 +2104,12 @@ msignal.Slot0.prototype = $extend(msignal.Slot.prototype,{
 	}
 	,__class__: msignal.Slot0
 });
-msignal.Slot1 = $hxClasses["msignal.Slot1"] = function(signal,listener,once,priority) {
+msignal.Slot1 = function(signal,listener,once,priority) {
 	if(priority == null) priority = 0;
 	if(once == null) once = false;
 	msignal.Slot.call(this,signal,listener,once,priority);
 };
+$hxClasses["msignal.Slot1"] = msignal.Slot1;
 msignal.Slot1.__name__ = ["msignal","Slot1"];
 msignal.Slot1.__super__ = msignal.Slot;
 msignal.Slot1.prototype = $extend(msignal.Slot.prototype,{
@@ -2613,11 +2122,12 @@ msignal.Slot1.prototype = $extend(msignal.Slot.prototype,{
 	,param: null
 	,__class__: msignal.Slot1
 });
-msignal.Slot2 = $hxClasses["msignal.Slot2"] = function(signal,listener,once,priority) {
+msignal.Slot2 = function(signal,listener,once,priority) {
 	if(priority == null) priority = 0;
 	if(once == null) once = false;
 	msignal.Slot.call(this,signal,listener,once,priority);
 };
+$hxClasses["msignal.Slot2"] = msignal.Slot2;
 msignal.Slot2.__name__ = ["msignal","Slot2"];
 msignal.Slot2.__super__ = msignal.Slot;
 msignal.Slot2.prototype = $extend(msignal.Slot.prototype,{
@@ -2632,7 +2142,7 @@ msignal.Slot2.prototype = $extend(msignal.Slot.prototype,{
 	,param1: null
 	,__class__: msignal.Slot2
 });
-msignal.SlotList = $hxClasses["msignal.SlotList"] = function(head,tail) {
+msignal.SlotList = function(head,tail) {
 	this.nonEmpty = false;
 	if(head == null && tail == null) {
 		if(msignal.SlotList.NIL != null) throw "Parameters head and tail are null. Use the NIL element instead.";
@@ -2643,8 +2153,8 @@ msignal.SlotList = $hxClasses["msignal.SlotList"] = function(head,tail) {
 		this.nonEmpty = true;
 	}
 };
+$hxClasses["msignal.SlotList"] = msignal.SlotList;
 msignal.SlotList.__name__ = ["msignal","SlotList"];
-msignal.SlotList.NIL = null;
 msignal.SlotList.prototype = {
 	find: function(listener) {
 		if(!this.nonEmpty) return null;
@@ -2683,12 +2193,12 @@ msignal.SlotList.prototype = {
 	,insertWithPriority: function(slot) {
 		if(!this.nonEmpty) return new msignal.SlotList(slot);
 		var priority = slot.priority;
-		if(priority > this.head.priority) return this.prepend(slot);
+		if(priority >= this.head.priority) return this.prepend(slot);
 		var wholeClone = new msignal.SlotList(this.head);
 		var subClone = wholeClone;
 		var current = this.tail;
 		while(current.nonEmpty) {
-			if(priority > current.head.priority) {
+			if(priority >= current.head.priority) {
 				subClone.tail = current.prepend(slot);
 				return wholeClone;
 			}
@@ -2733,14 +2243,16 @@ msignal.SlotList.prototype = {
 	,__class__: msignal.SlotList
 	,__properties__: {get_length:"get_length"}
 }
-service.IGetContactsService = $hxClasses["service.IGetContactsService"] = function() { }
+service.IGetContactsService = function() { }
+$hxClasses["service.IGetContactsService"] = service.IGetContactsService;
 service.IGetContactsService.__name__ = ["service","IGetContactsService"];
 service.IGetContactsService.prototype = {
 	getContacts: null
 	,__class__: service.IGetContactsService
 }
-service.DummyGetContactsService = $hxClasses["service.DummyGetContactsService"] = function() {
+service.DummyGetContactsService = function() {
 };
+$hxClasses["service.DummyGetContactsService"] = service.DummyGetContactsService;
 service.DummyGetContactsService.__name__ = ["service","DummyGetContactsService"];
 service.DummyGetContactsService.__interfaces__ = [service.IGetContactsService];
 service.DummyGetContactsService.prototype = {
@@ -2753,8 +2265,8 @@ service.DummyGetContactsService.prototype = {
 	}
 	,__class__: service.DummyGetContactsService
 }
-var view = view || {}
-view.View = $hxClasses["view.View"] = function() {
+var view = {}
+view.View = function() {
 	this.id = "view" + view.View.idCounter++;
 	this.index = -1;
 	this.className = Type.getClassName(Type.getClass(this)).split(".").pop();
@@ -2762,6 +2274,7 @@ view.View = $hxClasses["view.View"] = function() {
 	this.signal = new msignal.Signal2();
 	this.initialize();
 };
+$hxClasses["view.View"] = view.View;
 view.View.__name__ = ["view","View"];
 view.View.prototype = {
 	set_index: function(value) {
@@ -2776,8 +2289,7 @@ view.View.prototype = {
 	,remove: function() {
 	}
 	,initialize: function() {
-		if(this.tagName == null) this.tagName = "div";
-		this.element = js.Lib.document.createElement(this.tagName);
+		this.element = js.Browser.document.createElement("div");
 		this.element.setAttribute("id",this.id);
 		this.element.className = this.className;
 	}
@@ -2825,16 +2337,17 @@ view.View.prototype = {
 	,__class__: view.View
 	,__properties__: {set_index:"set_index"}
 }
-view.AppView = $hxClasses["view.AppView"] = function() {
+view.AppView = function() {
 	view.View.call(this);
 };
+$hxClasses["view.AppView"] = view.AppView;
 view.AppView.__name__ = ["view","AppView"];
 view.AppView.__interfaces__ = [mmvc.api.IViewContainer];
 view.AppView.__super__ = view.View;
 view.AppView.prototype = $extend(view.View.prototype,{
 	initialize: function() {
 		view.View.prototype.initialize.call(this);
-		js.Lib.document.body.appendChild(this.element);
+		js.Browser.document.body.appendChild(this.element);
 	}
 	,dispatch: function(event,view) {
 		switch(event) {
@@ -2845,7 +2358,6 @@ view.AppView.prototype = $extend(view.View.prototype,{
 			this.viewRemoved(view);
 			break;
 		default:
-			view.View.prototype.dispatch.call(this,event,view);
 		}
 	}
 	,drawUI: function() {
@@ -2869,9 +2381,10 @@ view.AppView.prototype = $extend(view.View.prototype,{
 	,viewAdded: null
 	,__class__: view.AppView
 });
-view.AppViewMediator = $hxClasses["view.AppViewMediator"] = function() {
+view.AppViewMediator = function() {
 	mmvc.impl.Mediator.call(this);
 };
+$hxClasses["view.AppViewMediator"] = view.AppViewMediator;
 view.AppViewMediator.__name__ = ["view","AppViewMediator"];
 view.AppViewMediator.__super__ = mmvc.impl.Mediator;
 view.AppViewMediator.prototype = $extend(mmvc.impl.Mediator.prototype,{
@@ -2887,22 +2400,23 @@ view.AppViewMediator.prototype = $extend(mmvc.impl.Mediator.prototype,{
 	,initSignal: null
 	,__class__: view.AppViewMediator
 });
-view.ContactsList = $hxClasses["view.ContactsList"] = function() {
+view.ContactsList = function() {
 	view.View.call(this);
 	this.element.style.position = "absolute";
 };
+$hxClasses["view.ContactsList"] = view.ContactsList;
 view.ContactsList.__name__ = ["view","ContactsList"];
 view.ContactsList.__super__ = view.View;
 view.ContactsList.prototype = $extend(view.View.prototype,{
 	listItemClickHandler: function(event,item) {
-		this.clickedData = item.getData();
+		this.clickedData = item.get_data();
 		this.dispatch(view.ContactsList.ON_ITEM_CLICKED,this);
 	}
 	,setSelectedVO: function(myVO) {
 		var _g1 = 0, _g = this._listItems.length;
 		while(_g1 < _g) {
 			var i = _g1++;
-			if(this._listItems[i].getData() == myVO) this._listItems[i].setSelected(true); else this._listItems[i].setSelected(false);
+			if(this._listItems[i].get_data() == myVO) this._listItems[i].set_selected(true); else this._listItems[i].set_selected(false);
 		}
 	}
 	,setDataArray: function(data) {
@@ -2922,9 +2436,10 @@ view.ContactsList.prototype = $extend(view.View.prototype,{
 	,clickedData: null
 	,__class__: view.ContactsList
 });
-view.ContactsListMediator = $hxClasses["view.ContactsListMediator"] = function() {
+view.ContactsListMediator = function() {
 	mmvc.impl.Mediator.call(this);
 };
+$hxClasses["view.ContactsListMediator"] = view.ContactsListMediator;
 view.ContactsListMediator.__name__ = ["view","ContactsListMediator"];
 view.ContactsListMediator.__super__ = mmvc.impl.Mediator;
 view.ContactsListMediator.prototype = $extend(mmvc.impl.Mediator.prototype,{
@@ -2932,56 +2447,55 @@ view.ContactsListMediator.prototype = $extend(mmvc.impl.Mediator.prototype,{
 		this.selectContactSignal.selectedContact = this.view.clickedData;
 		this.selectContactSignal.dispatch();
 	}
-	,contactsModelChangeHandler: function(event,model1) {
-		switch(event) {
-		case model.ContactsModel.CONTACTS_SET:
-			this.view.setDataArray(model1.getContacts());
-			break;
-		case model.ContactsModel.SELECTED_CONTACT_SET:
-			this.view.setSelectedVO(model1.getSelectedContact());
-			break;
-		}
+	,selectedContactHandler: function() {
+		this.view.setSelectedVO(this.notiSelectedContactSet.selectedContact);
+	}
+	,contactsSetHandler: function() {
+		this.view.setDataArray(this.notiContactsSet.contacts);
 	}
 	,onRegister: function() {
 		mmvc.impl.Mediator.prototype.onRegister.call(this);
-		this.contactsModel.signal.add($bind(this,this.contactsModelChangeHandler));
+		this.notiContactsSet.add($bind(this,this.contactsSetHandler));
+		this.notiSelectedContactSet.add($bind(this,this.selectedContactHandler));
 		this.view.signal.add($bind(this,this.viewItemSelectedHandler));
 	}
+	,notiSelectedContactSet: null
+	,notiContactsSet: null
 	,selectContactSignal: null
 	,contactsModel: null
 	,__class__: view.ContactsListMediator
 });
-view.ListItem = $hxClasses["view.ListItem"] = function(labelText,data) {
+view.ListItem = function(labelText,data) {
 	var _g = this;
 	this._data = data;
 	this.signal = new msignal.Signal2();
-	this.element = js.Lib.document.createElement("Div");
+	this.element = js.Browser.document.createElement("div");
 	this.element.style.position = "absolute";
 	this.element.style.width = "100px";
 	this.element.style.height = "20px";
 	this.element.style.backgroundColor = "white";
-	this.textField = js.Lib.document.createElement("Div");
+	this.textField = js.Browser.document.createElement("div");
 	this.element.appendChild(this.textField);
 	this.textField.innerHTML = labelText;
 	this.element.onclick = function(e) {
 		_g.signal.dispatch(view.ListItem.ON_CLICK,_g);
 	};
 };
+$hxClasses["view.ListItem"] = view.ListItem;
 view.ListItem.__name__ = ["view","ListItem"];
 view.ListItem.prototype = {
-	getData: function() {
-		return this._data;
-	}
-	,setSelected: function(value) {
+	set_selected: function(value) {
 		this._selected = value;
 		if(this._selected) this.element.style.backgroundColor = "#CCCCCC"; else this.element.style.backgroundColor = "white";
 		return this._selected;
 	}
-	,getSelected: function() {
+	,get_selected: function() {
 		return this._selected;
 	}
 	,_selected: null
-	,selected: null
+	,get_data: function() {
+		return this._data;
+	}
 	,_data: null
 	,data: null
 	,_lableText: null
@@ -2989,53 +2503,56 @@ view.ListItem.prototype = {
 	,element: null
 	,signal: null
 	,__class__: view.ListItem
-	,__properties__: {get_data:"getData",set_selected:"setSelected",get_selected:"getSelected"}
+	,__properties__: {get_data:"get_data",set_selected:"set_selected",get_selected:"get_selected"}
 }
-view.ThumbnailDisplay = $hxClasses["view.ThumbnailDisplay"] = function() {
+view.ThumbnailDisplay = function() {
 	view.View.call(this);
-	this.drawUI();
 };
+$hxClasses["view.ThumbnailDisplay"] = view.ThumbnailDisplay;
 view.ThumbnailDisplay.__name__ = ["view","ThumbnailDisplay"];
 view.ThumbnailDisplay.__super__ = view.View;
 view.ThumbnailDisplay.prototype = $extend(view.View.prototype,{
-	setSrc: function(value) {
+	set_src: function(value) {
 		this.image.src = value;
 		return value;
 	}
 	,src: null
 	,drawUI: function() {
 		this.element.style.position = "absolute";
-		this.image = js.Lib.document.createElement("img");
+		this.image = js.Browser.document.createElement("img");
 		this.image.style.width = "100px";
 		this.image.style.height = "100px";
 		this.element.appendChild(this.image);
 	}
 	,image: null
 	,__class__: view.ThumbnailDisplay
-	,__properties__: $extend(view.View.prototype.__properties__,{set_src:"setSrc"})
+	,__properties__: $extend(view.View.prototype.__properties__,{set_src:"set_src"})
 });
-view.ThumbnailDisplayMediator = $hxClasses["view.ThumbnailDisplayMediator"] = function() {
+view.ThumbnailDisplayMediator = function() {
 	mmvc.impl.Mediator.call(this);
 };
+$hxClasses["view.ThumbnailDisplayMediator"] = view.ThumbnailDisplayMediator;
 view.ThumbnailDisplayMediator.__name__ = ["view","ThumbnailDisplayMediator"];
 view.ThumbnailDisplayMediator.__super__ = mmvc.impl.Mediator;
 view.ThumbnailDisplayMediator.prototype = $extend(mmvc.impl.Mediator.prototype,{
-	contactsModelChangeHandler: function(event,model1) {
-		if(event == model.ContactsModel.SELECTED_CONTACT_SET) this.view.setSrc("images/" + this.contactsModel.getSelectedContact().thumbURL);
+	selectedContactHandler: function() {
+		this.view.set_src("images/" + this.notiSelectedContactSet.selectedContact.thumbURL);
 	}
 	,onRegister: function() {
 		mmvc.impl.Mediator.prototype.onRegister.call(this);
-		this.contactsModel.signal.add($bind(this,this.contactsModelChangeHandler));
+		this.view.drawUI();
+		this.notiSelectedContactSet.add($bind(this,this.selectedContactHandler));
 	}
-	,contactsModel: null
+	,notiSelectedContactSet: null
 	,__class__: view.ThumbnailDisplayMediator
 });
-var vo = vo || {}
-vo.ContactVO = $hxClasses["vo.ContactVO"] = function(firstName,lastName,thumbURL) {
+var vo = {}
+vo.ContactVO = function(firstName,lastName,thumbURL) {
 	this.firstName = firstName;
 	this.lastName = lastName;
 	this.thumbURL = thumbURL;
 };
+$hxClasses["vo.ContactVO"] = vo.ContactVO;
 vo.ContactVO.__name__ = ["vo","ContactVO"];
 vo.ContactVO.prototype = {
 	thumbURL: null
@@ -3044,14 +2561,14 @@ vo.ContactVO.prototype = {
 	,__class__: vo.ContactVO
 }
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };
-var $_;
-function $bind(o,m) { var f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; return f; };
+var $_, $fid = 0;
+function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
 if(Array.prototype.indexOf) HxOverrides.remove = function(a,o) {
 	var i = a.indexOf(o);
 	if(i == -1) return false;
 	a.splice(i,1);
 	return true;
-}; else null;
+};
 Math.__name__ = ["Math"];
 Math.NaN = Number.NaN;
 Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
@@ -3067,53 +2584,31 @@ String.prototype.__class__ = $hxClasses.String = String;
 String.__name__ = ["String"];
 Array.prototype.__class__ = $hxClasses.Array = Array;
 Array.__name__ = ["Array"];
-Date.prototype.__class__ = $hxClasses.Date = Date;
-Date.__name__ = ["Date"];
 var Int = $hxClasses.Int = { __name__ : ["Int"]};
 var Dynamic = $hxClasses.Dynamic = { __name__ : ["Dynamic"]};
 var Float = $hxClasses.Float = Number;
 Float.__name__ = ["Float"];
-var Bool = $hxClasses.Bool = Boolean;
+var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = $hxClasses.Class = { __name__ : ["Class"]};
 var Enum = { };
-var Void = $hxClasses.Void = { __ename__ : ["Void"]};
-if(typeof document != "undefined") js.Lib.document = document;
-if(typeof window != "undefined") {
-	js.Lib.window = window;
-	js.Lib.window.onerror = function(msg,url,line) {
-		var f = js.Lib.onerror;
-		if(f == null) return false;
-		return f(msg,[url + ":" + line]);
-	};
-}
 msignal.SlotList.NIL = new msignal.SlotList(null,null);
 mmvc.api.IContext.__meta__ = { obj : { 'interface' : null}};
 ApplicationContext.__meta__ = { fields : { initSignal : { name : ["initSignal"], type : ["controller.InitSignal"], inject : null}}};
+IMap.__meta__ = { obj : { 'interface' : null}};
 mmvc.api.ICommand.__meta__ = { obj : { 'interface' : null}};
 mmvc.impl.Command.__meta__ = { fields : { signal : { name : ["signal"], type : ["msignal.Signal"], inject : null}, mediatorMap : { name : ["mediatorMap"], type : ["mmvc.api.IMediatorMap"], inject : null}, injector : { name : ["injector"], type : ["minject.Injector"], inject : null}, commandMap : { name : ["commandMap"], type : ["mmvc.api.ICommandMap"], inject : null}, contextView : { name : ["contextView"], type : ["mmvc.api.IViewContainer"], inject : null}}};
 service.IResponder.__meta__ = { obj : { 'interface' : null}};
 controller.InitCommand.__meta__ = { fields : { contactsModel : { name : ["contactsModel"], type : ["model.ContactsModel"], inject : null}, service : { name : ["service"], type : ["service.IGetContactsService"], inject : null}}};
-msignal.Signal.__meta__ = { fields : { createSlot : { IgnoreCover : null}}};
 controller.SelectContactCommand.__meta__ = { fields : { contactsModel : { name : ["contactsModel"], type : ["model.ContactsModel"], inject : null}, selectContactSignal : { name : ["selectContactSignal"], type : ["controller.SelectContactSignal"], inject : null}}};
-js.Lib.onerror = null;
-minject.point.InjectionPoint.__meta__ = { fields : { initializeInjection : { IgnoreCover : null}, applyInjection : { IgnoreCover : null}}};
-minject.result.InjectionResult.__meta__ = { fields : { getResponse : { IgnoreCover : null}}};
+js.Browser.document = typeof window != "undefined" ? window.document : null;
 mmvc.api.ICommandMap.__meta__ = { obj : { 'interface' : null}};
 mmvc.api.IMediator.__meta__ = { obj : { 'interface' : null}};
 mmvc.api.IMediatorMap.__meta__ = { obj : { 'interface' : null}};
 mmvc.api.IViewContainer.__meta__ = { obj : { 'interface' : null}};
 mmvc.api.IViewMap.__meta__ = { obj : { 'interface' : null}};
-mmvc.base.ContextError.E_COMMANDMAP_NOIMPL = "Command Class does not implement an execute() method";
-mmvc.base.ContextError.E_COMMANDMAP_OVR = "Cannot overwrite map";
-mmvc.base.ContextError.E_MEDIATORMAP_NOIMPL = "Mediator Class does not implement IMediator";
-mmvc.base.ContextError.E_MEDIATORMAP_OVR = "Mediator Class has already been mapped to a View Class in this context";
-mmvc.base.ContextError.E_EVENTMAP_NOSNOOPING = "Listening to the context eventDispatcher is not enabled for this EventMap";
-mmvc.base.ContextError.E_CONTEXT_INJECTOR = "The ContextBase does not specify a concrete Injector. Please override the injector getter in your concrete or abstract Context.";
-mmvc.base.ContextError.E_CONTEXT_REFLECTOR = "The ContextBase does not specify a concrete Reflector. Please override the reflector getter in your concrete or abstract Context.";
 mmvc.impl.Mediator.__meta__ = { fields : { mediatorMap : { name : ["mediatorMap"], type : ["mmvc.api.IMediatorMap"], inject : null}, contextView : { name : ["contextView"], type : ["mmvc.api.IViewContainer"], inject : null}, injector : { name : ["injector"], type : ["minject.Injector"], inject : null}}};
-model.ContactsModel.CONTACTS_SET = "CONTACTS_SET";
-model.ContactsModel.SELECTED_CONTACT_SET = "SELECTED_CONTACT_SET";
+model.ContactsModel.__meta__ = { fields : { notiSelectedContactSet : { name : ["notiSelectedContactSet"], type : ["controller.NotiSelectedContactSet"], inject : null}, notiContactsSet : { name : ["notiContactsSet"], type : ["controller.NotiContactsSet"], inject : null}}};
 service.IGetContactsService.__meta__ = { obj : { 'interface' : null}};
 view.View.ADDED = "added";
 view.View.REMOVED = "removed";
@@ -3122,7 +2617,10 @@ view.View.idCounter = 0;
 view.AppView.ON_CLICK = "ON_CLICK";
 view.AppViewMediator.__meta__ = { fields : { contactsModel : { name : ["contactsModel"], type : ["model.ContactsModel"], inject : null}, initSignal : { name : ["initSignal"], type : ["controller.InitSignal"], inject : null}}};
 view.ContactsList.ON_ITEM_CLICKED = "ON_ITEM_CLICKED";
-view.ContactsListMediator.__meta__ = { fields : { selectContactSignal : { name : ["selectContactSignal"], type : ["controller.SelectContactSignal"], inject : null}, contactsModel : { name : ["contactsModel"], type : ["model.ContactsModel"], inject : null}}};
+view.ContactsListMediator.__meta__ = { fields : { notiSelectedContactSet : { name : ["notiSelectedContactSet"], type : ["controller.NotiSelectedContactSet"], inject : null}, notiContactsSet : { name : ["notiContactsSet"], type : ["controller.NotiContactsSet"], inject : null}, selectContactSignal : { name : ["selectContactSignal"], type : ["controller.SelectContactSignal"], inject : null}, contactsModel : { name : ["contactsModel"], type : ["model.ContactsModel"], inject : null}}};
 view.ListItem.ON_CLICK = "ON_CLICK";
-view.ThumbnailDisplayMediator.__meta__ = { fields : { contactsModel : { name : ["contactsModel"], type : ["model.ContactsModel"], inject : null}}};
+view.ThumbnailDisplayMediator.__meta__ = { fields : { notiSelectedContactSet : { name : ["notiSelectedContactSet"], type : ["controller.NotiSelectedContactSet"], inject : null}}};
 Main.main();
+})();
+
+//@ sourceMappingURL=MmvcExample.js.map

@@ -21,7 +21,8 @@ SOFTWARE.
 */
 
 package view;
-import js.Dom.HtmlDom;
+import js.html.DivElement ;
+
 import msignal.Signal;
 /**
  * ...
@@ -35,31 +36,36 @@ class ListItem
 	public var signal(default, null):Signal2<String, ListItem>;
 
 
-	public var element:HtmlDom; 
+	public var element:DivElement; 
 	
-	private var textField:HtmlDom;
+	private var textField:DivElement;
 	
 	
 	private var _lableText:String;
 	
 	
-	public var data(getData, null):Dynamic;
+	public var data(get, null):Dynamic;
 	private var _data:Dynamic;
+
+	private function get_data():Dynamic
+	{	
+		return _data;	
+	}
 	
 	
 	
 	// selected property
-	public var selected(getSelected, setSelected):Bool;
+	public var selected(get, set):Bool;
 	
 	private var _selected:Bool;
 	
 	
-	private function getSelected():Bool
+	private function get_selected():Bool
 	{
 		return _selected;
 	}
 	
-	private function setSelected(value:Bool):Bool
+	private function set_selected(value:Bool):Bool
 	{
 		_selected = value;
 		if (_selected)
@@ -78,10 +84,7 @@ class ListItem
 	
 	
 	
-	private function getData():Dynamic
-	{	
-		return _data;	
-	}
+	
 
 	
 	
@@ -92,12 +95,12 @@ class ListItem
 		signal = new Signal2<String, ListItem>();
 	
 	
-		element = js.Lib.document.createElement("Div");
+		element = js.Browser.document.createDivElement();
 		element.style.position = "absolute";
 		element.style.width =  "100px";		
 		element.style.height = "20px";
 		element.style.backgroundColor = "white";		
-		textField = js.Lib.document.createElement("Div");
+		textField = js.Browser.document.createDivElement();
 		element.appendChild(textField);
 		textField.innerHTML = labelText;
 		

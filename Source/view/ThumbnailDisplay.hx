@@ -21,8 +21,8 @@ SOFTWARE.
 */
 
 package view;
-import js.Dom.Image;
-import js.Dom.HtmlDom;
+import js.html.ImageElement;
+
 /**
  * ...
  * @author robinburrer
@@ -31,23 +31,24 @@ class ThumbnailDisplay extends View
 {
 	
 	
-	private var image:Image;
+	private var image:ImageElement;
 	
 	public function new () 
 	{
 		super();
 		
-		drawUI();
+
 		
-	}		
-	
-	
-	private function drawUI():Void
-	{
-		element.style.position = "absolute";
+	}	
+
 
 	
-		image = cast js.Lib.document.createElement("img");
+	// important the drawUI method should always be triggered by the mediator 
+	public  function drawUI():Void
+	{
+		element.style.position = "absolute";
+	
+		image =  js.Browser.document.createImageElement();
 		
 		image.style.width = "100px";
 		image.style.height = "100px";
@@ -61,9 +62,9 @@ class ThumbnailDisplay extends View
 	
 	
 	//
-	public var src(null,setSrc):String;
+	public var src(null,set):String;
 	
-	private function setSrc(value:String):String
+	private function set_src(value:String):String
 	{
 		image.src = value;
 		return value;

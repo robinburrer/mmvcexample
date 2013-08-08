@@ -1,6 +1,7 @@
 -main Main
 -cp Source
 -lib mmvc
+-debug
 -js Export/MmvcExample.js
 
 

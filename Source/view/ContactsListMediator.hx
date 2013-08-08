@@ -25,7 +25,8 @@ import mmvc.impl.Mediator.Mediator;
 import model.ContactsModel;
 
 
-
+import controller.NotiContactsSet;
+import controller.NotiSelectedContactSet;
 import controller.SelectContactSignal;
 import vo.ContactVO;
 /**
@@ -40,6 +41,12 @@ class ContactsListMediator extends Mediator<ContactsList>
 	
 	@inject 	
 	public var selectContactSignal:SelectContactSignal;
+
+	@inject
+	public var notiContactsSet:NotiContactsSet;
+
+	@inject
+	public var notiSelectedContactSet:NotiSelectedContactSet;
 
 	
 	
@@ -56,8 +63,9 @@ class ContactsListMediator extends Mediator<ContactsList>
 		super.onRegister();
 	
 		//view.drawUI();
-		contactsModel.signal.add(contactsModelChangeHandler);
-	
+		
+		notiContactsSet.add(contactsSetHandler);
+		notiSelectedContactSet.add(selectedContactHandler);
 		
 		view.signal.add(viewItemSelectedHandler);
 		
@@ -65,35 +73,26 @@ class ContactsListMediator extends Mediator<ContactsList>
 		
 	}	
 	
-	
-	private function contactsModelChangeHandler(event:String, model:ContactsModel)
+	private function contactsSetHandler():Void
 	{
+		view.setDataArray(notiContactsSet.contacts);
+	}	
 
-		switch (event)
-		{
-			case ContactsModel.CONTACTS_SET:
-			view.setDataArray(model.contacts);
-			
-			case ContactsModel.SELECTED_CONTACT_SET:
-			view.setSelectedVO(model.selectedContact);
-			
-		
-		}
+	private function selectedContactHandler():Void
+	{
+		view.setSelectedVO(notiSelectedContactSet.selectedContact);
 	}
-	
+
+
+
+
+
 	
 	
 	private function viewItemSelectedHandler(event:String, myView:View):Void
 	{
-		
-		// the propper way would be to tigger a signal which than would be mapped to a "selectContactCommand"
-		// I just modify the model directly though
-		//contactsModel.selectedContact = view.clickedData;
-		
 		selectContactSignal.selectedContact = view.clickedData;
 		selectContactSignal.dispatch();
-		
-		
 	}
 
 }

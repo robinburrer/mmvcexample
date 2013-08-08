@@ -23,7 +23,8 @@ SOFTWARE.
 package ;
 import view.AppView;
 import view.ContactsList;
-import js.Dom.HtmlDom;
+import js.html.DivElement ;
+
 class Main
 {
 	/**
@@ -32,8 +33,7 @@ class Main
 	*/
 	public static function main()
 	{
-		//var view = new AppView();
-		//var view2:ContactsList = new ContactsList ();
+		trace ("start");
 		var view = new AppView();
 		
 		var context:ApplicationContext = new ApplicationContext(view);

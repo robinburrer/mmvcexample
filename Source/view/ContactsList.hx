@@ -104,7 +104,8 @@ class ContactsList extends View
 	
 		
 		clickedData = item.data;		
-		this.dispatch(ON_ITEM_CLICKED,this);
+
+		dispatch(ON_ITEM_CLICKED,this);
 	
 	}
 	

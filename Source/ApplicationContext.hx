@@ -30,15 +30,22 @@ import mmvc.api.IViewContainer;
 
 import view.AppView;
 import view.AppViewMediator;
+
 import view.ContactsList;
 import view.ContactsListMediator;
+
 import view.ThumbnailDisplay;
 import view.ThumbnailDisplayMediator;
+
 
 import controller.InitCommand;
 import controller.InitSignal;
 import controller.SelectContactSignal;
 import controller.SelectContactCommand;
+
+import controller.NotiContactsSet;
+import controller.NotiSelectedContactSet;
+
 
 import service.IGetContactsService;
 import service.DummyGetContactsService;
@@ -69,7 +76,11 @@ class ApplicationContext extends mmvc.impl.Context
 	
 		// signal command mapping
 		commandMap.mapSignalClass(InitSignal, InitCommand);	
-		commandMap.mapSignalClass(SelectContactSignal, SelectContactCommand);				
+		commandMap.mapSignalClass(SelectContactSignal, SelectContactCommand);	
+
+		// notification signals
+		injector.mapSingleton(NotiContactsSet);			
+		injector.mapSingleton(NotiSelectedContactSet);
 		
 		// model
 		injector.mapSingleton(ContactsModel);		
@@ -78,9 +89,12 @@ class ApplicationContext extends mmvc.impl.Context
 		injector.mapSingletonOf(IGetContactsService,DummyGetContactsService);
 		
 		
-		// view mediator mapping		
+		// view mediator mapping	
+		
 		mediatorMap.mapView(ContactsList, ContactsListMediator);
+
 		mediatorMap.mapView(ThumbnailDisplay, ThumbnailDisplayMediator);
+	
 		
 		mediatorMap.mapView(AppView, AppViewMediator);
 	
